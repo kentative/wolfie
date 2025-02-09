@@ -8,6 +8,7 @@
 
 ### Start wolfie
 1. Define required values in .env file
+2. `source wolfie/bin/activate`
 2. `nohup python bot.py > output.log 2>&1 &`
 3. `echo $! > wolfie.pid`
 
