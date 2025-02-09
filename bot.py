@@ -4,6 +4,8 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from utils.logger import init_logger
 
+VERSION = "1.0.20250209"
+
 # Load environment variables
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -20,7 +22,7 @@ bot = commands.Bot(command_prefix=PREFIX, intents=intents)
 
 @bot.event
 async def on_ready():
-    logger.info(f'{bot.user} has connected to Discord!')
+    logger.info(f'{bot.user} version {VERSION} has connected to Discord!')
     
     # Load all cogs
     for filename in os.listdir('./cogs'):
