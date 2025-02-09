@@ -1,6 +1,5 @@
 import os
 from datetime import datetime, timedelta
-from encodings.aliases import aliases
 from typing import Dict, Optional
 
 import discord
@@ -10,8 +9,25 @@ from discord.ext import commands
 from utils.logger import init_logger
 
 WOLFIE_ADMIN_ROLE = os.getenv('WOLFIE_ADMIN_ROLE', 'leadership')
+ALLOWED_ROLES = [ WOLFIE_ADMIN_ROLE ]
 
 logger = init_logger('QueueManager')
+
+
+def has_required_permissions():
+    async def predicate(ctx):
+        # Allow if user has 'manage_guild' permission
+        if ctx.author.guild_permissions.manage_guild:
+            return True
+
+        # Allow if user has any of the specified roles
+        if any(role.name in ALLOWED_ROLES for role in ctx.author.roles):
+            return True
+
+        # If neither condition is met, deny access
+        return False
+
+    return commands.check(predicate)
 
 class QueueManager(commands.Cog):
     def __init__(self, bot):
@@ -50,7 +66,7 @@ class QueueManager(commands.Cog):
         return self.queue_start_time + timedelta(hours=queue_length)
 
     @commands.command(name='q-next')
-    @commands.has_role(WOLFIE_ADMIN_ROLE)
+    @has_required_permissions()
     async def advance_queue(self, ctx):
         """Advance all queues to the next time slot"""
         if not self.queue_start_time:
@@ -91,7 +107,7 @@ class QueueManager(commands.Cog):
                 f"Queues advanced by {ctx.author.name}, no users affected")
 
     @commands.command(name='q-back')
-    @commands.has_role(WOLFIE_ADMIN_ROLE)
+    @has_required_permissions()
     async def rollback_queue(self, ctx):
         """Rollback all queues to the previous time slot"""
         if not self.queue_start_time:
@@ -143,8 +159,8 @@ class QueueManager(commands.Cog):
             logger.info(
                 f"Queues rolled back by {ctx.author.name}, no users affected")
 
-    @commands.command(name='q-set-time')
-    @commands.has_role(WOLFIE_ADMIN_ROLE)
+    @commands.command(name='q-set-time', aliases=['q-set'])
+    @has_required_permissions()
     async def set_queue_time(self, ctx, *, time_str: Optional[str] = None):
         """Set the starting time for all queues"""
         try:
@@ -308,7 +324,6 @@ class QueueManager(commands.Cog):
                             inline=False)
 
         await ctx.send(embed=embed)
-
 
 async def setup(bot):
     await bot.add_cog(QueueManager(bot))
