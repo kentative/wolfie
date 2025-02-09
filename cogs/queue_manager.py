@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timedelta
+from encodings.aliases import aliases
 from typing import Dict, Optional
 
 import discord
@@ -282,7 +283,7 @@ class QueueManager(commands.Cog):
         """Add user to Praetorian Prefecture queue"""
         await self._add_to_queue(ctx, 'praetorian')
 
-    @commands.command(name='q-ls')
+    @commands.command(name='q-ls', aliases=['q-list'])
     async def list_queues(self, ctx):
         """List all queues and their current status"""
         embed = discord.Embed(title="Queue Status", color=discord.Color.blue())
