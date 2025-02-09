@@ -1,10 +1,14 @@
-import discord
-from discord.ext import commands
+import os
 from datetime import datetime, timedelta
+from typing import Dict, Optional
+
+import discord
 import pytz
+from discord.ext import commands
+
 from utils.logger import init_logger
-from typing import Dict, List, Optional, Tuple, Deque
-from collections import deque
+
+WOLFIE_ADMIN_ROLE = os.getenv('WOLFIE_ADMIN_ROLE', 'leadership')
 
 logger = init_logger('QueueManager')
 
@@ -45,7 +49,7 @@ class QueueManager(commands.Cog):
         return self.queue_start_time + timedelta(hours=queue_length)
 
     @commands.command(name='q-next')
-    @commands.has_permissions(manage_guild=True)
+    @commands.has_role(WOLFIE_ADMIN_ROLE)
     async def advance_queue(self, ctx):
         """Advance all queues to the next time slot"""
         if not self.queue_start_time:
@@ -86,7 +90,7 @@ class QueueManager(commands.Cog):
                 f"Queues advanced by {ctx.author.name}, no users affected")
 
     @commands.command(name='q-back')
-    @commands.has_permissions(manage_guild=True)
+    @commands.has_role(WOLFIE_ADMIN_ROLE)
     async def rollback_queue(self, ctx):
         """Rollback all queues to the previous time slot"""
         if not self.queue_start_time:
@@ -139,7 +143,7 @@ class QueueManager(commands.Cog):
                 f"Queues rolled back by {ctx.author.name}, no users affected")
 
     @commands.command(name='q-set-time')
-    @commands.has_permissions(manage_guild=True)
+    @commands.has_role(WOLFIE_ADMIN_ROLE)
     async def set_queue_time(self, ctx, *, time_str: Optional[str] = None):
         """Set the starting time for all queues"""
         try:
