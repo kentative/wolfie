@@ -4,7 +4,6 @@ from logging.handlers import RotatingFileHandler
 
 
 def init_logger(logger_name:str):
-    is_logger_initiaized = True
 
     # Create logs directory if it doesn't exist
     if not os.path.exists('logs'):
@@ -16,7 +15,7 @@ def init_logger(logger_name:str):
     # Create handlers
     console_handler = logging.StreamHandler()
     file_handler = RotatingFileHandler(
-        'logs/discord_bot.log',
+        'logs/wolfie.log',
         maxBytes=1024 * 1024,  # 1MB
         backupCount=5
     )
