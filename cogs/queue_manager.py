@@ -9,7 +9,7 @@ from discord.ext import commands
 from utils.logger import init_logger
 
 WOLFIE_ADMIN_ROLE = os.getenv('WOLFIE_ADMIN_ROLE', 'leadership')
-ALLOWED_ROLES = [ WOLFIE_ADMIN_ROLE ]
+ALLOWED_ROLES = [ WOLFIE_ADMIN_ROLE.lower() ]
 
 logger = init_logger('QueueManager')
 
@@ -20,11 +20,10 @@ def has_required_permissions():
         if ctx.author.guild_permissions.manage_guild:
             return True
 
-        # Allow if user has any of the specified roles
-        if any(role.name in ALLOWED_ROLES for role in ctx.author.roles):
+        # Allow if user has any of the specified roles (case-insensitive)
+        if any(str(role.name).lower() in ALLOWED_ROLES for role in ctx.author.roles):
             return True
 
-        # If neither condition is met, deny access
         return False
 
     return commands.check(predicate)
