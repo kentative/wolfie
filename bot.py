@@ -39,7 +39,7 @@ async def on_command_error(ctx, error):
         await ctx.send("You don't have permission to use this command.")
     else:
         logger.error(f'An error occurred: {str(error)}')
-        await ctx.send("An error occurred while processing the command.")
+        await ctx.send(f'{str(error)}')
 
 if __name__ == '__main__':
     if not TOKEN:
