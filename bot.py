@@ -36,7 +36,7 @@ async def on_ready():
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
-        await ctx.send(f"Command not found. Use `{PREFIX}help` to see available commands.")
+        await ctx.send(f"Command not found. Use `{PREFIX}q-help` to see available cwommands.")
     elif isinstance(error, commands.MissingPermissions):
         await ctx.send("You don't have permission to use this command.")
     else:

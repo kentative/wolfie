@@ -6,6 +6,8 @@ import discord
 import pytz
 from discord.ext import commands
 
+from cogs.namelist import NAME_LIST_PATH
+from utils.commons import load_data
 from utils.logger import init_logger
 
 WOLFIE_ADMIN_ROLE = os.getenv('WOLFIE_ADMIN_ROLE', 'leadership')
@@ -31,6 +33,7 @@ def has_required_permissions():
 class QueueManager(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.user_alias: dict = load_data(NAME_LIST_PATH)
         self.queues = {
             'tribune': [],
             'elder': [],
@@ -48,11 +51,15 @@ class QueueManager(commands.Cog):
             'master_processed': [],
             'praetorian_processed': []
         }
+
         self.queue_start_time: Optional[datetime] = None
+
         self.user_positions: Dict[int, str] = {
         }  # Maps user ID to their current queue position
+
         self.pending_leave_confirms: Dict[int, str] = {
         }  # Maps user ID to queue they're trying to leave
+
 
     def _get_next_time_slot(self, queue_name: str) -> datetime:
         """Calculate the next available time slot for a queue"""
@@ -264,9 +271,9 @@ class QueueManager(commands.Cog):
         self.user_positions[user_id] = position
 
         await ctx.send(
-            f"Added {ctx.author.name} to the {position} queue for time slot: "
-            f"{next_slot.strftime('%Y-%m-%d %H')} UTC")
-        logger.info(f"Added {ctx.author.name} to {position} queue")
+            f"Added {self._get_alias(ctx)} to the {position} queue for time slot: "
+            f"{next_slot.strftime('%m-%d %H')}")
+        logger.info(f"Added {self._get_alias(ctx)} to {position} queue")
 
     @commands.command(name='q-tribune')
     async def queue_tribune(self, ctx):
@@ -283,17 +290,17 @@ class QueueManager(commands.Cog):
         """Add user to Chief Priest queue"""
         await self._add_to_queue(ctx, 'priest')
 
-    @commands.command(name='q-sage')
+    @commands.command(name='q-sage', aliases=['q-court'])
     async def queue_sage(self, ctx):
         """Add user to Court Sage queue"""
         await self._add_to_queue(ctx, 'sage')
 
-    @commands.command(name='q-master')
+    @commands.command(name='q-master', aliases=['q-tactical'])
     async def queue_master(self, ctx):
         """Add user to Tactical Master queue"""
         await self._add_to_queue(ctx, 'master')
 
-    @commands.command(name='q-praetorian')
+    @commands.command(name='q-praetorian', aliases=['q-prefecture', 'q-pp'])
     async def queue_praetorian(self, ctx):
         """Add user to Praetorian Prefecture queue"""
         await self._add_to_queue(ctx, 'praetorian')
@@ -303,6 +310,7 @@ class QueueManager(commands.Cog):
         """List all queues and their current status"""
         embed = discord.Embed(title="Queue Status", color=discord.Color.blue())
 
+        count = 10
         for position, queue in self.queues.items():
             if not queue:
                 value = "--"
@@ -311,18 +319,26 @@ class QueueManager(commands.Cog):
                 sorted_queue = sorted(queue, key=lambda x: x[2])
                 # Format the first few entries
                 entries = [
-                    f"{i+1}. {name} - {time.strftime('%Y-%m-%d %H')} UTC"
-                    for i, (_, name, time) in enumerate(sorted_queue[:5])
+                    f"{i+1}. {self._get_alias_by_id(user_id, name)} - {time.strftime('%m-%d %H')}"
+                    for i, (user_id, name, time) in enumerate(sorted_queue[:count])
                 ]
                 value = "\n".join(entries)
-                if len(queue) > 5:
-                    value += f"\n... and {len(queue) - 5} more"
+                if len(queue) > count:
+                    value += f"\n... and {len(queue) - count} more"
 
             embed.add_field(name=f"{position.title()} Queue",
                             value=value,
                             inline=False)
 
         await ctx.send(embed=embed)
+
+    def _get_alias(self, ctx):
+        return (self.user_alias.get(str(ctx.author.id), {})
+                .get('alias', ctx.author.name))
+
+    def _get_alias_by_id(self, user_id:str, default:str):
+        return self.user_alias.get(str(user_id), {}).get('alias', default)
+
 
 async def setup(bot):
     await bot.add_cog(QueueManager(bot))
