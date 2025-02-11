@@ -333,10 +333,14 @@ class QueueManager(commands.Cog):
         await ctx.send(embed=embed)
 
     def _get_alias(self, ctx):
+        # TODO only reload if needed
+        self.user_alias: dict = load_data(NAME_LIST_PATH)
         return (self.user_alias.get(str(ctx.author.id), {})
                 .get('alias', ctx.author.name))
 
     def _get_alias_by_id(self, user_id:str, default:str):
+        # TODO only reload if needed
+        self.user_alias: dict = load_data(NAME_LIST_PATH)
         return self.user_alias.get(str(user_id), {}).get('alias', default)
 
 
