@@ -24,12 +24,10 @@ class NameList(commands.Cog):
 
         existing_alias = self.user_alias.get(str(ctx.author.id), {})
         if existing_alias.get('alias') != alias:
-            self.user_alias.update({
-                ctx.author.id : {
-                    'name': ctx.author.name,
-                    'alias': alias
-                }
-            })
+            self.user_alias[str(ctx.author.id)] = {
+                'name': ctx.author.name,
+                'alias': alias
+            }
 
             embed.add_field(name=f"{ctx.author.name}", value=f"is known to wolfie as {alias}", inline=False)
             save_data(self.user_alias, NAME_LIST_PATH)
