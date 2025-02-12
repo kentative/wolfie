@@ -6,7 +6,7 @@ import discord
 import pytz
 from discord.ext import commands
 
-from core.memory import user_alias
+from core.memory import get_alias, get_alias_by_id
 from utils.logger import init_logger
 
 WOLFIE_ADMIN_ROLE = os.getenv('WOLFIE_ADMIN_ROLE', 'leadership')
@@ -269,9 +269,9 @@ class QueueManager(commands.Cog):
         self.user_positions[user_id] = position
 
         await ctx.send(
-            f"Added {self._get_alias(ctx)} to the {position} queue for time slot: "
+            f"Added {get_alias(ctx)} to the {position} queue for time slot: "
             f"{next_slot.strftime('%m-%d %H')}")
-        logger.info(f"Added {self._get_alias(ctx)} to {position} queue")
+        logger.info(f"Added {get_alias(ctx)} to {position} queue")
 
     @commands.command(name='q-tribune')
     async def queue_tribune(self, ctx):
@@ -317,7 +317,7 @@ class QueueManager(commands.Cog):
                 sorted_queue = sorted(queue, key=lambda x: x[2])
                 # Format the first few entries
                 entries = [
-                    f"{i+1}. {self._get_alias_by_id(user_id, name)} - {time.strftime('%m-%d %H')}"
+                    f"{i+1}. {get_alias_by_id(user_id, name)} - {time.strftime('%m-%d %H')}"
                     for i, (user_id, name, time) in enumerate(sorted_queue[:count])
                 ]
                 value = "\n".join(entries)
@@ -329,16 +329,6 @@ class QueueManager(commands.Cog):
                             inline=False)
 
         await ctx.send(embed=embed)
-
-    @staticmethod
-    def _get_alias(ctx):
-        return (user_alias.get(str(ctx.author.id), {})
-                .get('alias', ctx.author.name))
-
-    @staticmethod
-    def _get_alias_by_id(user_id:str, default:str):
-        return user_alias.get(str(user_id), {}).get('alias', default)
-
 
 async def setup(bot):
     await bot.add_cog(QueueManager(bot))

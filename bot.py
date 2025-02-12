@@ -3,7 +3,7 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from utils.commons import load_data
+from utils.commons import load_user_prefs
 from utils.logger import init_logger
 
 VERSION = "1.0.20250209"
