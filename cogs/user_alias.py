@@ -1,20 +1,17 @@
-import json
-
 import discord
 from discord.ext import commands
 
+from core.memory import user_alias
+from utils.commons import save_data
 from utils.logger import init_logger
-from utils.commons import save_data, load_data
 
 NAME_LIST_TITLE = 'Wolfie Name List'
-NAME_LIST_PATH = "data/names.json"
 
-logger = init_logger('NameList')
+logger = init_logger('Memory')
 
-class NameList(commands.Cog):
+class WolfieMemory(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.user_alias : dict = load_data(NAME_LIST_PATH)
 
     @commands.command(name='wolfie.set.name', aliases=['w.set.name'])
     async def set_name(self, ctx, alias:str):
@@ -22,15 +19,15 @@ class NameList(commands.Cog):
         embed = discord.Embed(title=NAME_LIST_TITLE,
                               color=discord.Color.dark_embed())
 
-        existing_alias = self.user_alias.get(str(ctx.author.id), {})
+        existing_alias = user_alias.get(str(ctx.author.id), {})
         if existing_alias.get('alias') != alias:
-            self.user_alias[str(ctx.author.id)] = {
+            user_alias[str(ctx.author.id)] = {
                 'name': ctx.author.name,
                 'alias': alias
             }
 
             embed.add_field(name=f"{ctx.author.name}", value=f"is known to wolfie as {alias}", inline=False)
-            save_data(self.user_alias, NAME_LIST_PATH)
+            save_data(user_alias, NAME_LIST_PATH)
         else:
             await ctx.send("Wolfie already knows your name")
             return
@@ -43,7 +40,7 @@ class NameList(commands.Cog):
 
         embed = discord.Embed(title=NAME_LIST_TITLE, color=discord.Color.dark_embed())
 
-        for i, value in enumerate(self.user_alias.values(), start=1):
+        for i, value in enumerate(user_alias.values(), start=1):
             embed.add_field(
                 name=f"{i}. {value.get('name')}-{value.get('alias')}",
                 value="", inline=False)
@@ -51,4 +48,4 @@ class NameList(commands.Cog):
         await ctx.send(embed=embed)
 
 async def setup(bot):
-    await bot.add_cog(NameList(bot))
+    await bot.add_cog(WolfieMemory(bot))

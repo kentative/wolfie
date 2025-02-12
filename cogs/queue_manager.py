@@ -6,8 +6,7 @@ import discord
 import pytz
 from discord.ext import commands
 
-from cogs.namelist import NAME_LIST_PATH
-from utils.commons import load_data
+from core.memory import user_alias
 from utils.logger import init_logger
 
 WOLFIE_ADMIN_ROLE = os.getenv('WOLFIE_ADMIN_ROLE', 'leadership')
@@ -33,7 +32,6 @@ def has_required_permissions():
 class QueueManager(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.user_alias: dict = load_data(NAME_LIST_PATH)
         self.queues = {
             'tribune': [],
             'elder': [],
@@ -332,16 +330,14 @@ class QueueManager(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    def _get_alias(self, ctx):
-        # TODO only reload if needed
-        self.user_alias: dict = load_data(NAME_LIST_PATH)
-        return (self.user_alias.get(str(ctx.author.id), {})
+    @staticmethod
+    def _get_alias(ctx):
+        return (user_alias.get(str(ctx.author.id), {})
                 .get('alias', ctx.author.name))
 
-    def _get_alias_by_id(self, user_id:str, default:str):
-        # TODO only reload if needed
-        self.user_alias: dict = load_data(NAME_LIST_PATH)
-        return self.user_alias.get(str(user_id), {}).get('alias', default)
+    @staticmethod
+    def _get_alias_by_id(user_id:str, default:str):
+        return user_alias.get(str(user_id), {}).get('alias', default)
 
 
 async def setup(bot):

@@ -21,7 +21,7 @@ def init_logger(logger_name:str):
     )
 
     # Create formatters
-    formatter = logging.Formatter('%(asctime)s - %(name)s - [Thread-%(thread)d] - %(levelname)s - %(message)s')
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     console_handler.setFormatter(formatter)
     file_handler.setFormatter(formatter)
 
