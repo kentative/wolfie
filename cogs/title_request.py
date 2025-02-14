@@ -149,7 +149,6 @@ class TitleRequestQueue(commands.Cog):
         else:
             await ctx.send("No previous entries to revert.")
 
-# TODO display both UTC and local timezone
     @commands.command(name="queue.list", aliases=['q.list', 'q.ls'])
     async def queue_list(self, ctx, *queue_names):
         queue_names = queue_names or QUEUES.keys()
@@ -164,23 +163,21 @@ class TitleRequestQueue(commands.Cog):
             if len(queue['entries']) == 0:
                 continue # skip empty queue
 
-            description = ""
-            last_date = None
+            # Display Queue name
+            embed.add_field(name=QUEUES[queue_name], value="", inline=False)
 
+            # Display queue entries with UTC and Local time
             for i, entry in enumerate(queue["entries"]):
+
+                emoji = EMOJIS["past"] if i < queue["cursor"] else (EMOJIS["current"] if i == queue["cursor"] else "")
+                user_alias = get_alias_by_id(entry['user_id'], ctx.author.name)
+                user_tz =  pytz.timezone(get_timezone(ctx))
                 dt = datetime.fromisoformat(entry["time"])
-                current_date = dt.strftime('%Y-%m-%d')
 
-                if last_date and last_date != current_date:
-                    description += f"\n**{current_date}**\n"
-                    last_date = current_date
+                description = (f"{dt.strftime('%m-%d %H:%M')} UTC\n"
+                               f"{dt.astimezone(user_tz).strftime('%m-%d %H:%M')} {user_tz}")
 
-                emoji = EMOJIS["past"] if i < queue["cursor"] else EMOJIS["current"]
-                description += (f"{emoji} {get_alias_by_id(entry['user_id'], 'Unknown')}"
-                                f" - {dt.strftime('%m-%d %H:%M UTC')}\n")
-
-            if description:
-                embed.add_field(name=QUEUES[queue_name], value=description, inline=False)
+                embed.add_field(name=f'{emoji} {user_alias}', value=description, inline=False)
 
             # add spacing between queues
             embed.add_field(name="", value="", inline=False)
