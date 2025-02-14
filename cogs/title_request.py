@@ -7,6 +7,8 @@ import pytz
 from discord.ext import commands
 
 from core.memory import get_timezone, get_alias, get_alias_by_id
+from utils.commons import has_required_permissions, parse_datetime
+from utils.logger import init_logger
 
 QUEUE_FILE = "data/queue_data.json"
 QUEUES = {
@@ -21,19 +23,7 @@ QUEUES = {
 }
 EMOJIS = {"current": "➡️", "past": "✅", "date": "🗓️"}
 
-
-def parse_datetime(ctx, dt_str):
-    user_tz = get_timezone(ctx)
-    now = datetime.now(pytz.timezone(user_tz))
-
-    try:
-        dt = datetime.strptime(dt_str, "%H")
-        dt = now.replace(hour=dt.hour, minute=0, second=0, microsecond=0)
-    except ValueError:
-        return None
-
-    return dt.astimezone(pytz.UTC) if dt >= now else dt + timedelta(hours=24)
-
+logger = init_logger('TitleRequestQueue')
 
 class TitleRequestQueue(commands.Cog):
     def __init__(self, bot):
@@ -59,29 +49,32 @@ class TitleRequestQueue(commands.Cog):
         return None
 
     @commands.command(name="queue", aliases=['q', 'q.add'])
-    async def queue(self, ctx, queue_name: str, start_time: str = None):
+    async def queue_add(self, ctx, queue_name: str, start_date:str = None, start_time: str = None):
         if queue_name not in QUEUES:
             await ctx.send(f"Invalid queue. Choose from {', '.join(QUEUES.keys())}.")
             return
 
-        if start_time:
-            try:
-                user_tz = get_timezone(ctx)
-                now = datetime.now(pytz.timezone(user_tz))
-                dt = datetime.strptime(start_time, "%H")
-                dt = now.replace(hour=dt.hour, minute=0, second=0, microsecond=0).astimezone(pytz.UTC)
-            except ValueError:
-                await ctx.send("Invalid start time. Must be in the future and provide at least the starting hour.")
-                return
-        else:
+        user_tz = get_timezone(ctx)
+        now = datetime.now(pytz.timezone(user_tz))
+
+        dt = None
+        if not start_date and not start_time:
             dt = self.find_next_available_slot(queue_name)
             if not dt:
                 await ctx.send("No available slots in the next 3 days.")
                 return
+        else:
+            if not start_date:
+                start_date = f'{now.year}-{now.month}-{now.day}'
+            if not start_time:
+                start_time = f'{now.hour}:00:00'
+            dt = parse_datetime(f'{start_date} {start_time}', now)
+            if not dt:
+                await ctx.send("Invalid start time format. Provide at least the starting time.")
+                return
 
         user_id = str(ctx.author.id)
         entries = self.queues[queue_name]["entries"]
-
         if any(e["user_id"] == user_id and abs(dt - datetime.fromisoformat(e["time"])) < timedelta(days=1) for e in
                entries):
             await ctx.send("You can only register once per queue every 24 hours.")
@@ -126,6 +119,7 @@ class TitleRequestQueue(commands.Cog):
         else:
             await ctx.send("No matching entry found to remove.")
 
+    @has_required_permissions()
     @commands.command(name="q.next", aliases=['queue.next'])
     async def q_next(self, ctx, queue_name: str):
         if queue_name not in QUEUES:
@@ -140,6 +134,7 @@ class TitleRequestQueue(commands.Cog):
         else:
             await ctx.send("No more entries to advance.")
 
+    @has_required_permissions()
     @commands.command(name="q.back")
     async def q_back(self, ctx, queue_name: str):
         if queue_name not in QUEUES:
@@ -154,12 +149,12 @@ class TitleRequestQueue(commands.Cog):
         else:
             await ctx.send("No previous entries to revert.")
 
+# TODO display both UTC and local timezone
     @commands.command(name="queue.list", aliases=['q.list', 'q.ls'])
     async def queue_list(self, ctx, *queue_names):
         queue_names = queue_names or QUEUES.keys()
         embed = discord.Embed(title="👑️ Imperial Title Requests 👑️", color=discord.Color.dark_gold())
         embed.add_field(name="", value="", inline=False)
-
 
         for queue_name in queue_names:
             if queue_name.lower() not in QUEUES:
@@ -167,7 +162,7 @@ class TitleRequestQueue(commands.Cog):
 
             queue = self.queues[queue_name]
             if len(queue['entries']) == 0:
-                continue
+                continue # skip empty queue
 
             description = ""
             last_date = None
