@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from utils.commons import load_user_prefs
 from utils.logger import init_logger
 
-VERSION = "1.0.20250209"
+VERSION = "1.1.202502013"
 
 # Load environment variables
 load_dotenv()

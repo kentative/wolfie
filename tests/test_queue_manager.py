@@ -4,7 +4,7 @@ from datetime import datetime
 import pytest_asyncio
 import pytz
 from discord.ext import commands
-from cogs.queue_manager import QueueManager, has_required_permissions
+from attached_assets.queue_manager_v1 import QueueManager, has_required_permissions
 from tests.conftest import mock_command
 
 
