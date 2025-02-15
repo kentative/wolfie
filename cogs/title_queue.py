@@ -23,9 +23,9 @@ QUEUES = {
 }
 EMOJIS = {"current": "➡️", "past": "✅", "date": "🗓️"}
 
-logger = init_logger('TitleRequestQueue')
+logger = init_logger('TitleQueue')
 
-class TitleRequestQueue(commands.Cog):
+class TitleQueue(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.queues = {queue: {"entries": [], "cursor": 0} for queue in QUEUES}
@@ -50,6 +50,13 @@ class TitleRequestQueue(commands.Cog):
 
     @commands.command(name="queue", aliases=['q', 'q.add'])
     async def queue_add(self, ctx, queue_name: str, start_date:str = None, start_time: str = None):
+        """
+        Add yourself to the queue. Specify the queue name. Defaults to the next available slot.
+        example: !queue.add sage 2-15 3PM
+        - queue_name: one of (tribune, elder, priest, sage, master, praetorian, border, cavalry)
+        - start_date: Optional. ex: 2025-02-14 or 2-15
+        - start_time: Optional. ex: 04:00:00 or 4PM
+        """
         if queue_name not in QUEUES:
             await ctx.send(f"Invalid queue. Choose from {', '.join(QUEUES.keys())}.")
             return
@@ -88,9 +95,15 @@ class TitleRequestQueue(commands.Cog):
         entries.sort(key=lambda e: e["time"])
         self.save_queues()
         await ctx.send(f"Added {get_alias(ctx)} to {QUEUES[queue_name]} queue at {dt.strftime('%Y-%m-%d %H:%M UTC')}.")
+        await self.queue_list(ctx, queue_name)
+
 
     @commands.command(name="queue.remove", aliases=['queue.rm', 'q.rm', 'q.remove'])
     async def queue_remove(self, ctx, queue_name: str, start_time: str = None):
+        """
+        Remove yourself from the queue. Specify the queue name.
+		ex: !queue.add master
+        """
         if queue_name not in QUEUES:
             await ctx.send(f"Invalid queue. Choose from {', '.join(QUEUES.keys())}.")
             return
@@ -116,12 +129,17 @@ class TitleRequestQueue(commands.Cog):
             entries.remove(entry_to_remove)
             self.save_queues()
             await ctx.send(f"Removed {get_alias(ctx)} from {QUEUES[queue_name]} queue.")
+            await self.queue_list(ctx, queue_name)
         else:
             await ctx.send("No matching entry found to remove.")
 
     @has_required_permissions()
-    @commands.command(name="q.next", aliases=['queue.next'])
-    async def q_next(self, ctx, queue_name: str):
+    @commands.command(name="queue.next", aliases=['q.next', 'q.n'])
+    async def queue_next(self, ctx, queue_name: str):
+        """
+        To be used by title provider. Advance the queue to the next user.
+        ex. !queue.next master
+        """
         if queue_name not in QUEUES:
             await ctx.send(f"Invalid queue.")
             return
@@ -135,8 +153,12 @@ class TitleRequestQueue(commands.Cog):
             await ctx.send("No more entries to advance.")
 
     @has_required_permissions()
-    @commands.command(name="q.back")
-    async def q_back(self, ctx, queue_name: str):
+    @commands.command(name="queue.back", aliases=['q.back', 'q.b'])
+    async def queue_back(self, ctx, queue_name: str):
+        """
+        To be used by title provider. Rollback the queue to the previous user.
+        ex. !queue.back master
+        """
         if queue_name not in QUEUES:
             await ctx.send(f"Invalid queue.")
             return
@@ -151,6 +173,10 @@ class TitleRequestQueue(commands.Cog):
 
     @commands.command(name="queue.list", aliases=['q.list', 'q.ls'])
     async def queue_list(self, ctx, *queue_names):
+        """
+        Display the queue entries.
+        ex. !queue.list
+        """
         queue_names = queue_names or QUEUES.keys()
         embed = discord.Embed(title="👑️ Imperial Title Requests 👑️", color=discord.Color.dark_gold())
         embed.add_field(name="", value="", inline=False)
@@ -190,4 +216,4 @@ class TitleRequestQueue(commands.Cog):
 
 
 async def setup(bot):
-    await bot.add_cog(TitleRequestQueue(bot))
+    await bot.add_cog(TitleQueue(bot))

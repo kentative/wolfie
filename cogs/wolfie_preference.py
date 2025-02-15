@@ -8,15 +8,15 @@ from utils.logger import init_logger
 
 NAME_LIST_TITLE = 'Wolfie Name List'
 
-logger = init_logger('UserPreference')
+logger = init_logger('WolfiePreferences')
 
-class UserPreference(commands.Cog):
+class WolfiePreferences(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
     @commands.command(name='wolfie.set.name', aliases=['w.set.name'])
     async def set_name(self, ctx, alias:str):
-        """Add your alias to Wolfie's name list"""
+        """Tell Wolfie your in-game name"""
         embed = discord.Embed(title=NAME_LIST_TITLE,
                               color=discord.Color.dark_embed())
 
@@ -37,7 +37,7 @@ class UserPreference(commands.Cog):
 
     @commands.command(name='wolfie.names', aliases=['wolfie.name', 'w.names', 'w.name', 'w.pref', 'w.prefs'])
     async def list_names(self, ctx):
-        """Display Wolfie name list"""
+        """Display what Wolfie knows about you."""
 
         embed = discord.Embed(title=NAME_LIST_TITLE, color=discord.Color.dark_embed())
 
@@ -51,7 +51,10 @@ class UserPreference(commands.Cog):
 
     @commands.command(name="wolfie.set.time",  aliases=['w.set.time'])
     async def set_timezone(self, ctx, timezone_name: str):
-            """Allows users to set their timezone."""
+            """
+            Tell Wolfie your local timezone. Wolfie use your local timezone when display info requested by you.
+            Defaults to UTC. Find timezone here: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
+            """
             try:
                 zone:str = pytz.timezone(timezone_name).zone  # Validate timezone
 
@@ -66,4 +69,4 @@ class UserPreference(commands.Cog):
 
 
 async def setup(bot):
-    await bot.add_cog(UserPreference(bot))
+    await bot.add_cog(WolfiePreferences(bot))
