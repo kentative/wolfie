@@ -35,7 +35,7 @@ class WolfiePreferences(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command(name='wolfie.list', aliases=['wolfie.prefs', 'w.prefs', 'w.ls'])
+    @commands.command(name='wolfie.list', aliases=['wolfie.prefs', 'wolfie.pref', 'wolfie.ls'])
     async def list_prefs(self, ctx):
         """Display what Wolfie knows about you."""
 
