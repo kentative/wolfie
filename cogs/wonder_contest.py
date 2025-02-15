@@ -46,7 +46,9 @@ class WonderContest(commands.Cog):
         self.max_team_size = 30
 
     @commands.command(name="wonder.add", aliases=['w.add'])
-    async def wonder(self, ctx, day: str, time: str):
+    async def wonder(self, ctx,
+                     day: str=commands.parameter(description="use d1 or d2"),
+                     time: str=commands.parameter(description="use t1, t2 or t3")):
         """Register user for a specific day and time slot."""
         day = day.lower()
         time = time.lower()

@@ -15,7 +15,7 @@ class WolfiePreferences(commands.Cog):
         self.bot = bot
 
     @commands.command(name='wolfie.set.name', aliases=['w.set.name'])
-    async def set_name(self, ctx, alias:str):
+    async def set_name(self, ctx, alias: str = commands.parameter(description="- your in-game name")):
         """Tell Wolfie your in-game name"""
         embed = discord.Embed(title=NAME_LIST_TITLE,
                               color=discord.Color.dark_embed())
@@ -50,7 +50,7 @@ class WolfiePreferences(commands.Cog):
 
 
     @commands.command(name="wolfie.set.time",  aliases=['w.set.time'])
-    async def set_timezone(self, ctx, timezone_name: str):
+    async def set_timezone(self, ctx, timezone_name: str=commands.parameter(description="- your local timezone")):
             """
             Tell Wolfie your local timezone. Wolfie use your local timezone when display info requested by you.
             Defaults to UTC. Find timezone here: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)

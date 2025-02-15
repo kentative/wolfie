@@ -49,13 +49,13 @@ class TitleQueue(commands.Cog):
         return None
 
     @commands.command(name="queue", aliases=['q', 'q.add'])
-    async def queue_add(self, ctx, queue_name: str, start_date:str = None, start_time: str = None):
+    async def queue_add(self, ctx,
+                        queue_name: str=commands.parameter(description="- one of (tribune, elder, priest, sage, master, praetorian, border, cavalry"),
+                        start_date: str=commands.parameter(description="- Optional. ex: 2025-02-14 or 2-15"),
+                        start_time: str = commands.parameter(description="- Optional. ex: 15 or 3PM")):
         """
         Add yourself to the queue. Specify the queue name. Defaults to the next available slot.
-        example: !queue.add sage 2-15 3PM
-        - queue_name: one of (tribune, elder, priest, sage, master, praetorian, border, cavalry)
-        - start_date: Optional. ex: 2025-02-14 or 2-15
-        - start_time: Optional. ex: 04:00:00 or 4PM
+        - Example: !queue.add sage 2-15 3PM
         """
         if queue_name not in QUEUES:
             await ctx.send(f"Invalid queue. Choose from {', '.join(QUEUES.keys())}.")
@@ -99,10 +99,12 @@ class TitleQueue(commands.Cog):
 
 
     @commands.command(name="queue.remove", aliases=['queue.rm', 'q.rm', 'q.remove'])
-    async def queue_remove(self, ctx, queue_name: str, start_time: str = None):
+    async def queue_remove(self, ctx,
+                           queue_name: str=commands.parameter(description="- the queue name"),
+                           start_time: str=commands.parameter(description="- Optional. ex: 2025-02-14 or 2-15")):
         """
         Remove yourself from the queue. Specify the queue name.
-		ex: !queue.add master
+		- Example: !queue.add master
         """
         if queue_name not in QUEUES:
             await ctx.send(f"Invalid queue. Choose from {', '.join(QUEUES.keys())}.")
@@ -135,10 +137,11 @@ class TitleQueue(commands.Cog):
 
     @has_required_permissions()
     @commands.command(name="queue.next", aliases=['q.next', 'q.n'])
-    async def queue_next(self, ctx, queue_name: str):
+    async def queue_next(self, ctx,
+                         queue_name: str=commands.parameter(description="- the queue name")):
         """
         To be used by title provider. Advance the queue to the next user.
-        ex. !queue.next master
+        - Example: !queue.next master
         """
         if queue_name not in QUEUES:
             await ctx.send(f"Invalid queue.")
@@ -154,10 +157,10 @@ class TitleQueue(commands.Cog):
 
     @has_required_permissions()
     @commands.command(name="queue.back", aliases=['q.back', 'q.b'])
-    async def queue_back(self, ctx, queue_name: str):
+    async def queue_back(self, ctx, queue_name: str=commands.parameter(description="- the queue name")):
         """
         To be used by title provider. Rollback the queue to the previous user.
-        ex. !queue.back master
+        - Example: !queue.back master
         """
         if queue_name not in QUEUES:
             await ctx.send(f"Invalid queue.")
@@ -172,11 +175,9 @@ class TitleQueue(commands.Cog):
             await ctx.send("No previous entries to revert.")
 
     @commands.command(name="queue.list", aliases=['q.list', 'q.ls'])
-    async def queue_list(self, ctx, *queue_names):
-        """
-        Display the queue entries.
-        ex. !queue.list
-        """
+    async def queue_list(self, ctx, *queue_names: str):
+        """Display the queue entries. Example: !queue.list sage master ..."""
+
         queue_names = queue_names or QUEUES.keys()
         embed = discord.Embed(title="👑️ Imperial Title Requests 👑️", color=discord.Color.dark_gold())
         embed.add_field(name="", value="", inline=False)
