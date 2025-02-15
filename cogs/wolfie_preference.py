@@ -35,8 +35,8 @@ class WolfiePreferences(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command(name='wolfie.names', aliases=['wolfie.name', 'w.names', 'w.name', 'w.pref', 'w.prefs'])
-    async def list_names(self, ctx):
+    @commands.command(name='wolfie.list', aliases=['wolfie.prefs', 'w.prefs', 'w.ls'])
+    async def list_prefs(self, ctx):
         """Display what Wolfie knows about you."""
 
         embed = discord.Embed(title=NAME_LIST_TITLE, color=discord.Color.dark_embed())
