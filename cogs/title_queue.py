@@ -51,8 +51,8 @@ class TitleQueue(commands.Cog):
     @commands.command(name="queue", aliases=['q', 'q.add'])
     async def queue_add(self, ctx,
                         queue_name: str=commands.parameter(description="- one of (tribune, elder, priest, sage, master, praetorian, border, cavalry"),
-                        start_date: str=commands.parameter(description="- Optional. ex: 2025-02-14 or 2-15"),
-                        start_time: str = commands.parameter(description="- Optional. ex: 15 or 3PM")):
+                        start_date: str=commands.parameter(description="- Optional. ex: 2025-02-14 or 2-15", default=None),
+                        start_time: str = commands.parameter(description="- Optional. ex: 15 or 3PM", default=None)):
         """
         Add yourself to the queue. Specify the queue name. Defaults to the next available slot.
         - Example: !queue.add sage 2-15 3PM
@@ -101,7 +101,7 @@ class TitleQueue(commands.Cog):
     @commands.command(name="queue.remove", aliases=['queue.rm', 'q.rm', 'q.remove'])
     async def queue_remove(self, ctx,
                            queue_name: str=commands.parameter(description="- the queue name"),
-                           start_time: str=commands.parameter(description="- Optional. ex: 2025-02-14 or 2-15")):
+                           start_time: str=commands.parameter(description="- Optional. ex: 2025-02-14 or 2-15", default=None)):
         """
         Remove yourself from the queue. Specify the queue name.
 		- Example: !queue.add master
@@ -137,8 +137,7 @@ class TitleQueue(commands.Cog):
 
     @has_required_permissions()
     @commands.command(name="queue.next", aliases=['q.next', 'q.n'])
-    async def queue_next(self, ctx,
-                         queue_name: str=commands.parameter(description="- the queue name")):
+    async def queue_next(self, ctx, queue_name: str=commands.parameter(description="- the queue name")):
         """
         To be used by title provider. Advance the queue to the next user.
         - Example: !queue.next master
