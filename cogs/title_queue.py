@@ -50,10 +50,12 @@ class TitleQueue(commands.Cog):
 
         current_entry = queue_entries[queue['cursor']] if len(queue_entries) > 0 else None
         now = datetime.now(pytz.timezone(user_tz)).replace(minute=0, second=0, microsecond=0)
-        next_available_dt = parse_datetime(f'{current_entry["time"]}') if current_entry else now
+        next_available_dt = parse_datetime(f'{current_entry["time"]}', user_tz) if current_entry else now
         for i in range(72):  # Check the next 3 days
             dt = next_available_dt + timedelta(hours=i)
+            logger.info(f"next available time + {i}hour={dt} ")
             if all(entry["time"] != dt.isoformat() for entry in queue_entries):
+                logger.info(f"found available time: {dt.isoformat()} ")
                 return dt
         return None
 
