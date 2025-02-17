@@ -46,9 +46,11 @@ class TitleQueue(commands.Cog):
         # get current entry
         queue = self.queues[queue_name]
         queue_entries = queue['entries']
-        logger.info(f"- queue_entries: {queue_entries}")
+        cursor = queue['cursor']
+        logger.info(f"- queue_entries: {queue_entries}, cursor: {cursor}")
 
-        current_entry = queue_entries[queue['cursor']] if len(queue_entries) > 0 else None
+        current_entry = queue_entries[cursor] \
+            if len(queue_entries) > 0 and cursor < len(queue_entries) else None
         now = datetime.now(pytz.timezone(user_tz)).replace(minute=0, second=0, microsecond=0)
         next_available_dt = parse_datetime(f'{current_entry["time"]}', user_tz) if current_entry else now
         for i in range(72):  # Check the next 3 days
