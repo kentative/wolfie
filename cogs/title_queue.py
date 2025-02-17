@@ -6,22 +6,22 @@ import discord
 import pytz
 from discord.ext import commands
 
-from core.memory import get_timezone, get_alias, get_alias_by_id
+from core.memory import get_timezone, get_alias, get_alias_by_id, get_timezone_by_id
 from utils.commons import has_required_permissions, parse_datetime
 from utils.logger import init_logger
 
 QUEUE_FILE = "data/queue_data.json"
 QUEUES = {
-    'tribune': "🎖️Tribune (Healing)",
-    'elder': "🎖️Chief Elder (Gathering)",
-    'priest': "🎖️Chief Priest (Building)",
-    'sage': "🎖️Court Sage (Research)",
-    'master': "🎖️Tactical Master (Training)",
-    'praetorian': "🎖️Praetorian (PvP-Loss)",
-    'border': "🎖️Border Chief (Tribes)",
-    'cavalry': "🎖️Cavalry Leader (PvP-Atk/Def)"
+    'tribune': "🏆 Tribune (Healing) 🏆",
+    'elder': "🏆 Elder (Gathering) 🏆",
+    'priest': "🏆 Priest (Building) 🏆",
+    'sage': "🏆 Sage (Research) 🏆",
+    'master': "🏆 Master (Training) 🏆",
+    'praetorian': "🏆 Praetorian (PvP-Loss) 🏆",
+    'border': "🏆 Border (Tribes) 🏆",
+    'cavalry': "🏆 Cavalry (PvP-Atk/Def) 🏆"
 }
-EMOJIS = {"current": "➡️", "past": "✅", "date": "🗓️"}
+EMOJIS = {"current": "⏳", "past": "✅", "date": "🗓️", "left": "⬅️", "waiting": "⏳"}
 
 logger = init_logger('TitleQueue')
 
@@ -41,10 +41,19 @@ class TitleQueue(commands.Cog):
             json.dump(self.queues, f, indent=4)
 
     def find_next_available_slot(self, queue_name):
+        """ find the next time slot based on current entry in the queue"""
+
+        # get current entry
+        queue = self.queues[queue_name]
+        queue_entries = queue['entries']
+        logger.info(f"- queue_entries: {queue_entries}")
+
+        current_entry = queue_entries[queue['cursor']] if len(queue_entries) > 0 else None
         now = datetime.now(pytz.UTC).replace(minute=0, second=0, microsecond=0)
+        next_available_dt = parse_datetime(f'{current_entry["time"]}', now) if current_entry else now
         for i in range(72):  # Check the next 3 days
-            dt = now + timedelta(hours=i)
-            if all(entry["time"] != dt.isoformat() for entry in self.queues[queue_name]["entries"]):
+            dt = next_available_dt + timedelta(hours=i)
+            if all(entry["time"] != dt.isoformat() for entry in queue_entries):
                 return dt
         return None
 
@@ -91,7 +100,13 @@ class TitleQueue(commands.Cog):
             await ctx.send("You can only register up to 3 days in advance.")
             return
 
-        entries.append({"user_id": user_id, "time": dt.isoformat()})
+        # queue entry
+        entries.append({
+            "user_id": user_id,
+            "user_name": ctx.author.display_name,
+            "time": dt.isoformat()
+         })
+
         entries.sort(key=lambda e: e["time"])
         self.save_queues()
         await ctx.send(f"Added {get_alias(ctx)} to {QUEUES[queue_name]} queue at {dt.strftime('%Y-%m-%d %H:%M UTC')}.")
@@ -111,7 +126,9 @@ class TitleQueue(commands.Cog):
             return
 
         user_id = str(ctx.author.id)
-        entries = self.queues[queue_name]["entries"]
+        queue =  self.queues[queue_name]
+        cursor = int(queue['cursor'])
+        entries = queue["entries"]
 
         if start_time:
             try:
@@ -128,6 +145,11 @@ class TitleQueue(commands.Cog):
             entry_to_remove = next((e for e in entries if e["user_id"] == user_id), None)
 
         if entry_to_remove:
+            # update cursor value
+            entry_index = entries.index(entry_to_remove)
+            if entry_index <= cursor:
+                queue['cursor'] = cursor -1
+
             entries.remove(entry_to_remove)
             self.save_queues()
             await ctx.send(f"Removed {get_alias(ctx)} from {QUEUES[queue_name]} queue.")
@@ -178,7 +200,7 @@ class TitleQueue(commands.Cog):
         """Display the queue entries. Example: !queue.list sage master ..."""
 
         queue_names = queue_names or QUEUES.keys()
-        embed = discord.Embed(title="👑️ Imperial Title Requests 👑️", color=discord.Color.dark_gold())
+        embed = discord.Embed(title="👑 --= IMPERIAL TITLES =-- 👑", color=discord.Color.dark_gold())
         embed.add_field(name="", value="", inline=False)
 
         for queue_name in queue_names:
@@ -195,18 +217,25 @@ class TitleQueue(commands.Cog):
             # Display queue entries with UTC and Local time
             for i, entry in enumerate(queue["entries"]):
 
-                emoji = EMOJIS["past"] if i < queue["cursor"] else (EMOJIS["current"] if i == queue["cursor"] else "")
-                user_alias = get_alias_by_id(entry['user_id'], ctx.author.name)
-                user_tz =  pytz.timezone(get_timezone(ctx))
+                logger.info(f"{queue_name} entry: {entry}")
+                entry_id = entry['user_id']
+                entry_alias = get_alias_by_id(entry_id, entry.get('user_name'))
+
+                # message details
+                emoji = EMOJIS["past"] if i < queue["cursor"] \
+                    else (EMOJIS["current"] if i == queue["cursor"] else EMOJIS["waiting"])
+
+                entry_tz =  pytz.timezone(get_timezone_by_id(entry_id))
                 dt = datetime.fromisoformat(entry["time"])
 
-                description = (f"{dt.strftime('%m-%d %H:%M')} UTC\n"
-                               f"{dt.astimezone(user_tz).strftime('%m-%d %H:%M')} {user_tz}")
+                description = f"{dt.astimezone(entry_tz).strftime('%m-%d %H:%M')} {entry_tz}" \
+                    if entry_tz.zone != "UTC" else ""
 
-                embed.add_field(name=f'{emoji} {user_alias}', value=description, inline=False)
+                embed.add_field(name=f'{emoji}  {i+1}. {entry_alias} ({dt.strftime("%m-%d %H:%M")})',
+                                value=description,
+                                inline=False)
 
             # add spacing between queues
-            embed.add_field(name="", value="", inline=False)
             embed.add_field(name="", value="", inline=False)
 
         if not embed.fields:

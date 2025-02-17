@@ -1,4 +1,7 @@
 import os
+import traceback
+from traceback import print_stack
+
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -42,8 +45,8 @@ async def on_command_error(ctx, error):
     elif isinstance(error, commands.MissingPermissions):
         await ctx.send("You don't have permission to use this command.")
     else:
-        logger.error(f'An error occurred: {str(error)}')
-        await ctx.send(f'{str(error)}')
+        traceback.print_exception(type(error), error, error.__traceback__)
+        await ctx.send(f'Unable to process request. Wolfie will take a look')
 
 if __name__ == '__main__':
     if not TOKEN:

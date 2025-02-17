@@ -75,7 +75,7 @@ class WonderContest(commands.Cog):
         await ctx.send(f"{get_alias(ctx)} has been registered for {local_time.strftime(DATE_DISPLAY_FORMAT)}")
 
 
-    @commands.command(name="wonder.ls", aliases=['w.ls'])
+    @commands.command(name="wonder.list", aliases=['wonder.ls', 'w.ls', 'w.list'])
     async def wonder_list(self, ctx):
         """List current registration information in UTC."""
         d1_date, d2_date = get_weekend_dates('UTC')

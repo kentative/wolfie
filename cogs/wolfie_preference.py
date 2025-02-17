@@ -23,7 +23,7 @@ class WolfiePreferences(commands.Cog):
         pref = user_prefs.get(str(ctx.author.id), {})
         if pref.get('alias') != alias:
             pref.update({
-                'name': ctx.author.name,
+                'name': ctx.author.display_name,
                 'alias': alias
             })
             user_prefs[str(ctx.author.id)] = pref

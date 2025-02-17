@@ -48,17 +48,22 @@ def parse_datetime(input_dt: str, now: datetime, tz: str='UTC'):
     now = now.replace(minute=0, second=0, microsecond=0)
 
     try:
-        dt = datetime.strptime(input_dt, "%Y-%m-%d %H:%M:%S")
+        dt = datetime.strptime(input_dt, "%Y-%m-%dT%H:%M:%S%z")
+        dt = now.replace(month=dt.month, day=dt.day, hour=dt.hour)
     except ValueError:
         try:
-            dt = datetime.strptime(input_dt, "%m-%d %I%p")
+            dt = datetime.strptime(input_dt, "%Y-%m-%d %H:%M:%S")
             dt = now.replace(month=dt.month, day=dt.day, hour=dt.hour)
         except ValueError:
             try:
-                dt = datetime.strptime(input_dt, "%H")
-                dt = now.replace(hour=dt.hour)
+                dt = datetime.strptime(input_dt, "%m-%d %I%p")
+                dt = now.replace(month=dt.month, day=dt.day, hour=dt.hour)
             except ValueError:
-                return None
+                try:
+                    dt = datetime.strptime(input_dt, "%H")
+                    dt = now.replace(hour=dt.hour)
+                except ValueError:
+                    return None
 
     try:
         zone: tzinfo = pytz.timezone(tz)  # Validate timezone
