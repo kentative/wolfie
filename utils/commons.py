@@ -14,6 +14,23 @@ USER_PREFERENCES_PATH = "data/user_preferences.json"
 
 logger = init_logger('utils')
 
+DATE_PATTERNS = [
+    "%Y-%m-%d",  # 2025-02-16
+    "%d-%m-%Y",  # 16-02-2025
+    "%m/%d/%Y",  # 02/16/2025
+    "%d %b %Y",  # 16 Feb 2025
+    "%d %B %Y"   # 16 February 2025
+]
+
+TIME_PATTERNS = [
+    "%I%p",
+    "%I:%M%p",
+    "%H:%M",
+    "%H",
+    "%H:%M:%S",
+    "%I:%M:%S%p"
+]
+
 def has_required_permissions():
     async def predicate(ctx):
         # Allow if user has 'manage_guild' permission
@@ -42,9 +59,67 @@ def load_user_prefs():
         logger.info(f'{e}. Creating default preference file')
         return {}
 
-def parse_datetime(input_dt: str, now: datetime, tz: str='UTC'):
+def parse_date_input(input_date: str, user_tz: str='UTC'):
+    """Attempts to parse the input date, if not parsable, return value based on now"""
+
+    try:
+        zone: tzinfo = pytz.timezone(user_tz)  # Validate timezone
+    except pytz.UnknownTimeZoneError:
+        logger.warn(f'Invalid timezone specified: {user_tz}, defaulting to UTC')
+        zone = pytz.UTC
+
+    # only use year, month and day
+    now = datetime.now(zone)
+    now = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    for pattern in DATE_PATTERNS:
+        try:
+            dt = datetime.strptime(input_date, pattern)
+            dt = now.replace(month=dt.month, day=dt.day, year=dt.year)
+            return dt.strftime("%Y-%m-%d")
+        except ValueError:
+            continue
+
+    logger.info(f"provided date input does not match patterns {input_date}")
+    return None
+
+
+def parse_time_input(input_time: str, user_tz: str='UTC'):
+    """Attempts to parse the input date, if not parsable, return None"""
+
+    try:
+        zone: tzinfo = pytz.timezone(user_tz)  # Validate timezone
+    except pytz.UnknownTimeZoneError:
+        logger.warn(f'Invalid timezone specified: {user_tz}, defaulting to UTC')
+        zone = pytz.UTC
 
     # only use hour
+    now = datetime.now(zone)
+    now = now.replace(minute=0, second=0, microsecond=0)
+
+    for pattern in TIME_PATTERNS:
+        try:
+            dt = datetime.strptime(input_time, pattern)
+            dt = now.replace(hour=dt.hour)
+            return dt.strftime("%H:%M:%S")
+        except ValueError:
+            continue
+
+    logger.info(f"provided time input does not match patterns {input_time}")
+    return None
+
+
+def parse_datetime(input_dt: str, user_tz: str='UTC'):
+    """Attempts to parse the input datetime, if not parsable, return None"""
+
+    try:
+        zone: tzinfo = pytz.timezone(user_tz)  # Validate timezone
+    except pytz.UnknownTimeZoneError:
+        logger.warn(f'Invalid timezone specified: {user_tz}, defaulting to UTC')
+        zone = pytz.UTC
+
+    # only use hour
+    now = datetime.now(zone)
     now = now.replace(minute=0, second=0, microsecond=0)
 
     try:
@@ -60,14 +135,12 @@ def parse_datetime(input_dt: str, now: datetime, tz: str='UTC'):
                 dt = now.replace(month=dt.month, day=dt.day, hour=dt.hour)
             except ValueError:
                 try:
-                    dt = datetime.strptime(input_dt, "%H")
+                    dt = datetime.strptime(input_dt, "%I%p").time()
                     dt = now.replace(hour=dt.hour)
                 except ValueError:
-                    return None
-
-    try:
-        zone: tzinfo = pytz.timezone(tz)  # Validate timezone
-    except pytz.UnknownTimeZoneError:
-        logger.warn(f'Invalid timezone specified: {tz}, defaulting to UTC')
-        zone = pytz.UTC
-    return dt.astimezone(zone)
+                    try:
+                        dt = datetime.strptime(input_dt, "%H")
+                        dt = now.replace(hour=dt.hour)
+                    except ValueError:
+                        return None
+    return dt

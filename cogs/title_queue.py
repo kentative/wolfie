@@ -7,7 +7,7 @@ import pytz
 from discord.ext import commands
 
 from core.memory import get_timezone, get_alias, get_alias_by_id, get_timezone_by_id
-from utils.commons import has_required_permissions, parse_datetime
+from utils.commons import has_required_permissions, parse_datetime, parse_date_input, parse_time_input
 from utils.logger import init_logger
 
 QUEUE_FILE = "data/queue_data.json"
@@ -40,7 +40,7 @@ class TitleQueue(commands.Cog):
         with open(QUEUE_FILE, "w") as f:
             json.dump(self.queues, f, indent=4)
 
-    def find_next_available_slot(self, queue_name):
+    def find_next_available_slot(self, queue_name:str, user_tz:str):
         """ find the next time slot based on current entry in the queue"""
 
         # get current entry
@@ -49,8 +49,8 @@ class TitleQueue(commands.Cog):
         logger.info(f"- queue_entries: {queue_entries}")
 
         current_entry = queue_entries[queue['cursor']] if len(queue_entries) > 0 else None
-        now = datetime.now(pytz.UTC).replace(minute=0, second=0, microsecond=0)
-        next_available_dt = parse_datetime(f'{current_entry["time"]}', now) if current_entry else now
+        now = datetime.now(pytz.timezone(user_tz)).replace(minute=0, second=0, microsecond=0)
+        next_available_dt = parse_datetime(f'{current_entry["time"]}') if current_entry else now
         for i in range(72):  # Check the next 3 days
             dt = next_available_dt + timedelta(hours=i)
             if all(entry["time"] != dt.isoformat() for entry in queue_entries):
@@ -73,21 +73,32 @@ class TitleQueue(commands.Cog):
         user_tz = get_timezone(ctx)
         now = datetime.now(pytz.timezone(user_tz))
 
-        dt = None
         if not start_date and not start_time:
-            dt = self.find_next_available_slot(queue_name)
+            dt = self.find_next_available_slot(queue_name, user_tz)
+            logger.info(f"start date and time not specified, using next available slot: {dt}")
             if not dt:
                 await ctx.send("No available slots in the next 3 days.")
                 return
         else:
-            if not start_date:
-                start_date = f'{now.year}-{now.month}-{now.day}'
-            if not start_time:
-                start_time = f'{now.hour}:00:00'
-            dt = parse_datetime(f'{start_date} {start_time}', now)
-            if not dt:
-                await ctx.send("Invalid start time format. Provide at least the starting time.")
-                return
+            parsed_date = parse_date_input(start_date, user_tz)
+
+            # try parsing date as time
+            if not parsed_date and not start_time:
+                start_time = start_date
+                parsed_time = parse_time_input(start_time, user_tz)
+                parsed_date = f'{now.year}-{now.month}-{now.day}'
+            else:
+                parsed_time = parse_time_input(start_time, user_tz)
+                if not parsed_time:
+                    parsed_time = f'{now.hour}:00:00'
+
+            logger.info(f"date input: {start_date}={parsed_date} time input: {start_time}={parsed_time}")
+            dt = parse_datetime(f'{parsed_date} {parsed_time}', user_tz)
+
+        logger.info(f"final parsed datetime: {dt}")
+        if not dt:
+            await ctx.send("Invalid start time format. Provide at least the starting time.")
+            return
 
         user_id = str(ctx.author.id)
         entries = self.queues[queue_name]["entries"]
