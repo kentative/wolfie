@@ -17,14 +17,25 @@
 
 
 ## Usage instruction
+tldr:
+1. set name and time: 
+   - `!wolfie.set LegionZ Asia/Singapore`
+   -  timezone id: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+2. request title:
+   - `!q sage 9`
+   - queues: `tribune, elder, priest, sage, master, praetorian, border, cavalry` 
+3. more details: 
+   - `!help q` and `!help wolfie.set`
+
+---
 Setups (one time only)
-	!wolfie.set.name aoem_name
+	!wolfie.set aoem_name
 		- Tell wolfie your AoEM in game name
 	
 	!wolfie.set.time timezone_identifier
 		- Tell Wolfie your local timezone. Wolfie use your local timezone when display info requested by you.
 		- If not set, defaults to UTC.
-		- Find yours here: (List of tz database time zones - Wikipedia) use TZ Identifier column for your input
+		- Find yours here:  https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 
 	!wolfie.list - show what Wolfie knows about you
 
@@ -39,11 +50,4 @@ Title request (use as needed)
 	
 	!queue.list queue_name
 		- Ex: !queue.list sage
-
-tldr:
-1. set name and time: 
-   - `!wolfie.set LegionZ Asia/Singapore`
-2. request title:
-   - `!q sage 9`
-3. more details: 
-   - `!help q` and `!help wolfie.set`
+   
