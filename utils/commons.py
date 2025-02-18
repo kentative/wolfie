@@ -14,6 +14,11 @@ USER_PREFERENCES_PATH = "data/user_preferences.json"
 
 logger = init_logger('utils')
 
+MONTH_DAY_PATTERNS = [
+    "%m-%d",     # 2-14
+    "%d-%m",     # 14-2
+]
+
 DATE_PATTERNS = [
     "%Y-%m-%d",  # 2025-02-16
     "%d-%m-%Y",  # 16-02-2025
@@ -77,6 +82,15 @@ def parse_date_input(input_date: str, user_tz: str='UTC'):
         try:
             dt = datetime.strptime(input_date, pattern)
             dt = now.replace(month=dt.month, day=dt.day, year=dt.year)
+            return dt.strftime("%Y-%m-%d")
+        except ValueError:
+            continue
+    
+    # use current year
+    for pattern in MONTH_DAY_PATTERNS:
+        try:
+            dt = datetime.strptime(input_date, pattern)
+            dt = now.replace(month=dt.month, day=dt.day)
             return dt.strftime("%Y-%m-%d")
         except ValueError:
             continue

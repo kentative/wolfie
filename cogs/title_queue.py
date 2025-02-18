@@ -96,12 +96,16 @@ class TitleQueue(commands.Cog):
                 if not parsed_time:
                     parsed_time = f'{now.hour}:00:00'
 
-            logger.info(f"date input: {start_date}={parsed_date} time input: {start_time}={parsed_time}")
+            logger.info(f"date input: {start_date} = {parsed_date} time input: {start_time} = {parsed_time}")
             dt = parse_datetime(f'{parsed_date} {parsed_time}', user_tz)
 
         logger.info(f"final parsed datetime: {dt}")
         if not dt:
-            await ctx.send("Invalid start time format. Provide at least the starting time.")
+            await ctx.send("Invalid start time format. Use 'mm-dd hh'")
+            return
+
+        if dt < now:
+            await ctx.send("Invalid start time. Please specify the hour in the future.")
             return
 
         user_id = str(ctx.author.id)
@@ -174,7 +178,9 @@ class TitleQueue(commands.Cog):
 
     @has_required_permissions()
     @commands.command(name="queue.next", aliases=['q.next', 'q.n'])
-    async def queue_next(self, ctx, queue_name: str=commands.parameter(description="- the queue name")):
+    async def queue_next(self, ctx,
+                         queue_name: str=commands.parameter(description="- the queue name"),
+                         count: int=commands.parameter(description="number of entries to advance. default 1", default=1)):
         """
         To be used by title provider. Advance the queue to the next user.
         - Example: !queue.next master
@@ -183,9 +189,19 @@ class TitleQueue(commands.Cog):
             await ctx.send(f"Invalid queue.")
             return
 
+        if count < 1:
+            await ctx.send(f"Count must be at least 1.")
+
         queue = self.queues[queue_name]
-        if queue["cursor"] < len(queue["entries"]):
-            queue["cursor"] += 1
+        queue_size = len(queue["entries"])
+        cursor = queue["cursor"]
+        if count + cursor > len(queue):
+            count = queue_size - cursor
+            await ctx.send(f"Count value exceeds queue size. Changing to {count}")
+
+        logger.info(f"Advancing queue. cursor: {cursor} count: {count}")
+        if queue["cursor"] < queue_size:
+            queue["cursor"] += count
             self.save_queues()
             await ctx.send(f"Advanced {queue_name} queue.")
         else:
