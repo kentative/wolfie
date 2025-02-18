@@ -29,6 +29,7 @@ Setups (one time only)
 	!wolfie.list - show what Wolfie knows about you
 
 Title request (use as needed)
+	
 	!queue.add queue_name [date] [time]
         - Example: !queue.add sage 2-15 3PM		
         - Example: !q sage 3PM
@@ -38,3 +39,11 @@ Title request (use as needed)
 	
 	!queue.list queue_name
 		- Ex: !queue.list sage
+
+tldr:
+1. set name and time: 
+   - `!wolfie.set LegionZ Asia/Singapore`
+2. request title:
+   - `!q sage 9`
+3. more details: 
+   - `!help q` and `!help wolfie.set`

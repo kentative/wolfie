@@ -69,6 +69,7 @@ class TitleQueue(commands.Cog):
         """
         Add yourself to the queue. Specify the queue name. Defaults to the next available slot.
         - Example: !queue.add sage 2-15 3PM
+        - Queue names: tribune, elder, priest, sage, master, praetorian, border, cavalry
         """
         if queue_name not in QUEUES:
             await ctx.send(f"Invalid queue. Choose from {', '.join(QUEUES.keys())}.")
