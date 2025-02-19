@@ -15,6 +15,8 @@ USER_PREFERENCES_PATH = "data/user_preferences.json"
 logger = init_logger('utils')
 
 MONTH_DAY_PATTERNS = [
+    "%d/%m",     # 14/2
+    "%m/%d",     # 2/14
     "%m-%d",     # 2-14
     "%d-%m",     # 14-2
 ]
@@ -85,7 +87,7 @@ def parse_date_input(input_date: str, user_tz: str='UTC'):
             return dt.strftime("%Y-%m-%d")
         except ValueError:
             continue
-    
+
     # use current year
     for pattern in MONTH_DAY_PATTERNS:
         try:

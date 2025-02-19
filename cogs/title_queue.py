@@ -77,6 +77,7 @@ class TitleQueue(commands.Cog):
 
         user_tz = get_timezone(ctx)
         now = datetime.now(pytz.timezone(user_tz))
+        now = now.replace(minute=0, second=0, microsecond=0)
 
         if not start_date and not start_time:
             dt = self.find_next_available_slot(queue_name, user_tz)
