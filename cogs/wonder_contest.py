@@ -6,7 +6,7 @@ import discord
 import pytz
 from discord.ext import commands
 
-from core.memory import get_timezone, get_alias, get_pref
+from core.memory import get_timezone, get_alias, get_prefs, has_prefs
 from utils.logger import init_logger
 
 WONDER_CONQUEST_TEAM_FILE = "data/wonder_conquest_teams.json"
@@ -93,7 +93,8 @@ class WonderContest(commands.Cog):
 
 
     @commands.command(name="wonder.list", aliases=['wonder.ls', 'w.ls', 'w.list'])
-    async def wonder_list(self, ctx):
+    async def wonder_list(self, ctx, options:str = commands.parameter(description="supported options: 'all'", default="")):
+
         """List current registration information in UTC."""
         d1_date, d2_date = get_weekend_dates('UTC')
         day_mapping = {"d1": d1_date, "d2": d2_date}
@@ -107,16 +108,18 @@ class WonderContest(commands.Cog):
 
                 member_details = []
                 for m in members:
-                    user_pref = get_pref(m)
-                    logger.info(f"Listing {user_pref} for wonder conquest")
-                    user_tz = user_pref.get('timezone', 'UTC')
+                    prefs = get_prefs(m)
+                    logger.info(f"Listing {prefs} for wonder conquest")
+                    user_tz = prefs.get('timezone', 'UTC')
                     user_datetime = convert_utc_to_local(user_tz, f'{utc_date} {utc_time}')
                     member_details.append(
-                        f'{user_pref.get("alias")} ({user_datetime.strftime(DATE_DISPLAY_FORMAT)})')
+                        f'{prefs.get("alias")} ({user_datetime.strftime(DATE_DISPLAY_FORMAT)})')
 
-                embed.add_field(name=f"Day {day[1]} ({utc_date}) Slot {time[1]} ({utc_time})",
-                                value=f"{', '.join(member_details) if members else 'No registrations'}",
-                                inline=False)
+                # only display for non-empty list
+                if members or "all" in options:
+                    embed.add_field(name=f"Day {day[1]} ({utc_date}) Slot {time[1]} ({utc_time})",
+                                    value=f"{', '.join(member_details) if members else 'No registrations'}",
+                                    inline=False)
 
         await ctx.send(embed=embed)
 

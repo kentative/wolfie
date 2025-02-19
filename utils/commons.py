@@ -9,7 +9,6 @@ from utils.logger import init_logger
 
 WOLFIE_ADMIN_ROLE = os.getenv('WOLFIE_ADMIN_ROLE', 'leadership')
 ALLOWED_ROLES = [ WOLFIE_ADMIN_ROLE.lower() ]
-
 USER_PREFERENCES_PATH = "data/user_preferences.json"
 
 logger = init_logger('utils')
@@ -52,6 +51,7 @@ def has_required_permissions():
         return True
 
     return commands.check(predicate)
+
 
 def save_user_prefs(data:dict[str, str]):
     with open(USER_PREFERENCES_PATH, "w") as file:

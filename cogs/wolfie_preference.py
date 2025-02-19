@@ -2,7 +2,7 @@ import discord
 import pytz
 from discord.ext import commands
 
-from core.memory import user_prefs
+from core.memory import USER_PREFS
 from utils.commons import save_user_prefs
 from utils.logger import init_logger
 
@@ -25,16 +25,16 @@ class WolfiePreferences(commands.Cog):
         embed = discord.Embed(title=NAME_LIST_TITLE,
                               color=discord.Color.dark_embed())
 
-        pref = user_prefs.get(str(ctx.author.id), {})
+        pref = USER_PREFS.get(str(ctx.author.id), {})
         if pref.get('alias') != alias:
             pref.update({
                 'name': ctx.author.display_name,
                 'alias': alias,
                 'timezone': timezone
             })
-            user_prefs[str(ctx.author.id)] = pref
+            USER_PREFS[str(ctx.author.id)] = pref
             embed.add_field(name=f"{ctx.author.name}", value=f"is known to wolfie as {alias}", inline=False)
-            save_user_prefs(user_prefs)
+            save_user_prefs(USER_PREFS)
         else:
             await ctx.send("Wolfie already knows your name")
             return
@@ -51,13 +51,13 @@ class WolfiePreferences(commands.Cog):
             try:
                 zone:str = pytz.timezone(timezone_name).zone  # Validate timezone
 
-                pref = user_prefs.get(str(ctx.author.id), {})
+                pref = USER_PREFS.get(str(ctx.author.id), {})
                 pref.update({
                     'name': ctx.author.display_name,
                     'timezone' : zone
                 })
-                user_prefs[str(ctx.author.id)] = pref
-                save_user_prefs(user_prefs)
+                USER_PREFS[str(ctx.author.id)] = pref
+                save_user_prefs(USER_PREFS)
 
                 await ctx.send(f"Timezone set to {zone}.")
             except pytz.UnknownTimeZoneError:
@@ -70,7 +70,7 @@ class WolfiePreferences(commands.Cog):
 
         embed = discord.Embed(title=NAME_LIST_TITLE, color=discord.Color.dark_embed())
 
-        for i, value in enumerate(user_prefs.values(), start=1):
+        for i, value in enumerate(USER_PREFS.values(), start=1):
             embed.add_field(
                 name=f"{i}. {value.get('name')}-{value.get('alias')}-{value.get('timezone')}",
                 value="", inline=False)
