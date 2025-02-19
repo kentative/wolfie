@@ -264,7 +264,7 @@ class TitleQueue(commands.Cog):
                 description = f"{dt.astimezone(entry_tz).strftime('%m-%d %H:%M')} {entry_tz}" \
                     if entry_tz.zone != "UTC" else ""
 
-                embed.add_field(name=f'{emoji}  {i+1}. {entry_alias} ({dt.strftime("%m-%d %H:%M")})',
+                embed.add_field(name=f'{emoji}  {i+1}. {entry_alias} ({dt.astimezone(pytz.UTC).strftime("%m-%d %H:%M")})',
                                 value=description,
                                 inline=False)
 
