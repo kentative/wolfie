@@ -1,3 +1,5 @@
+import json
+import os
 from datetime import datetime, timedelta, timezone
 
 import discord
@@ -5,9 +7,13 @@ import pytz
 from discord.ext import commands
 
 from core.memory import get_timezone, get_alias, get_pref
+from utils.logger import init_logger
 
-time_mapping = {"t1": "01:00 UTC", "t2": "11:00 UTC", "t3": "17:00 UTC"}
+WONDER_CONQUEST_TEAM_FILE = "data/wonder_conquest_teams.json"
 DATE_DISPLAY_FORMAT = '%m-%d %H:%M %Z'
+time_mapping = {"t1": "01:00 UTC", "t2": "11:00 UTC", "t3": "17:00 UTC"}
+
+logger = init_logger('WonderContest')
 
 def get_weekend_dates(user_tz):
     """Returns the dates for the upcoming Saturday (d1) and Sunday (d2) in the user's local timezone."""
@@ -44,8 +50,18 @@ class WonderContest(commands.Cog):
             "d2": {"t1": [], "t2": [], "t3": []}
         }
         self.max_team_size = 30
+        self.load_teams()
 
-    @commands.command(name="wonder.add", aliases=['w.add'])
+    def load_teams(self):
+        if os.path.exists(WONDER_CONQUEST_TEAM_FILE):
+            with open(WONDER_CONQUEST_TEAM_FILE, "r") as f:
+                self.teams.update(json.load(f))
+
+    def save_teams(self):
+        with open(WONDER_CONQUEST_TEAM_FILE, "w") as f:
+            json.dump(self.teams, f, indent=4)
+
+    @commands.command(name="wonder.add", aliases=['w.add', 'wonder'])
     async def wonder(self, ctx,
                      day: str=commands.parameter(description="use d1 or d2"),
                      time: str=commands.parameter(description="use t1, t2 or t3")):
@@ -72,6 +88,7 @@ class WonderContest(commands.Cog):
         user_tz = get_timezone(ctx)
         utc_datetime = convert_timeslot_to_utc(day, time)
         local_time = convert_utc_to_local(user_tz, utc_datetime)
+        self.save_teams()
         await ctx.send(f"{get_alias(ctx)} has been registered for {local_time.strftime(DATE_DISPLAY_FORMAT)}")
 
 
@@ -82,15 +99,16 @@ class WonderContest(commands.Cog):
         day_mapping = {"d1": d1_date, "d2": d2_date}
 
         embed = discord.Embed(title="Wonder Contest Registration", color=discord.Color.dark_gold())
-
         for day, slots in self.teams.items():
             for time, members in slots.items():
+                logger.info(f"Listing entries for {day} {slots}")
                 utc_time = time_mapping[time]
                 utc_date = day_mapping[day]
 
                 member_details = []
                 for m in members:
                     user_pref = get_pref(m)
+                    logger.info(f"Listing {user_pref} for wonder conquest")
                     user_tz = user_pref.get('timezone', 'UTC')
                     user_datetime = convert_utc_to_local(user_tz, f'{utc_date} {utc_time}')
                     member_details.append(
