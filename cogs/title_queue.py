@@ -129,9 +129,13 @@ class TitleQueue(commands.Cog):
             await ctx.send("You can only register up to 3 days in advance.")
             return
 
-        if all(read_iso_datetime(entry["time"]) == dt for entry in entries):
-            await ctx.send(f"Time slot is already taken. Please select another slot.")
-            return
+        logger.info(f"checking available time for: {dt}")
+        for entry in entries:
+            entry_time = read_iso_datetime(entry["time"])
+            logger.info(f"entry time {entry_time}")
+            if entry_time == dt:
+                await ctx.send(f"Time slot is already taken. Please select another slot.")
+                return
 
         # queue entry
         entries.append({
