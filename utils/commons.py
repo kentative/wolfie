@@ -13,6 +13,7 @@ USER_PREFERENCES_PATH = "data/user_preferences.json"
 
 logger = init_logger('utils')
 
+ISO_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
 MONTH_DAY_PATTERNS = [
     "%d/%m",     # 14/2
     "%m/%d",     # 2/14
@@ -126,13 +127,13 @@ def parse_time_input(input_time: str, user_tz: str='UTC'):
     return None
 
 
-def parse_datetime(input_dt: str, user_tz: str='UTC'):
+def parse_datetime(input_dt: str, timezone: str= 'UTC'):
     """Attempts to parse the input datetime, if not parsable, return None"""
 
     try:
-        zone: tzinfo = pytz.timezone(user_tz)  # Validate timezone
+        zone: tzinfo = pytz.timezone(timezone)  # Validate timezone
     except pytz.UnknownTimeZoneError:
-        logger.warn(f'Invalid timezone specified: {user_tz}, defaulting to UTC')
+        logger.warn(f'Invalid timezone specified: {timezone}, defaulting to UTC')
         zone = pytz.UTC
 
     # only use hour
@@ -161,3 +162,6 @@ def parse_datetime(input_dt: str, user_tz: str='UTC'):
                     except ValueError:
                         return None
     return dt
+
+def read_iso_datetime(datetime_iso:str):
+    return datetime.strptime(datetime_iso, ISO_FORMAT)

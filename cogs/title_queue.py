@@ -7,7 +7,8 @@ import pytz
 from discord.ext import commands
 
 from core.memory import get_timezone, get_alias, get_alias_by_id, get_timezone_by_id
-from utils.commons import has_required_permissions, parse_datetime, parse_date_input, parse_time_input
+from utils.commons import has_required_permissions, parse_datetime, parse_date_input, parse_time_input, ISO_FORMAT, \
+    read_iso_datetime
 from utils.logger import init_logger
 
 QUEUE_FILE = "data/queue_data.json"
@@ -51,12 +52,19 @@ class TitleQueue(commands.Cog):
 
         current_entry = queue_entries[cursor] \
             if len(queue_entries) > 0 and cursor < len(queue_entries) else None
-        now = datetime.now(pytz.timezone(user_tz)).replace(minute=0, second=0, microsecond=0)
-        next_available_dt = parse_datetime(f'{current_entry["time"]}', user_tz) if current_entry else now
+        now = datetime.now(pytz.timezone(user_tz))
+        if now.minute > 30:
+            now = now + timedelta(hours=1)
+            logger.info(f"rounding to the next hour {now}")
+        now = now.replace(minute=0, second=0, microsecond=0)
+        next_available_dt = read_iso_datetime(current_entry["time"]) if current_entry else now
+
+        # use next_available_dt only if it's later than now
+        dt = next_available_dt if next_available_dt > now else now
         for i in range(72):  # Check the next 3 days
-            dt = next_available_dt + timedelta(hours=i)
-            logger.info(f"next available time + {i}hour={dt} ")
-            if all(entry["time"] != dt.isoformat() for entry in queue_entries):
+            dt = dt + timedelta(hours=i)
+            logger.info(f"next available time + {i} hour={dt} ")
+            if all(read_iso_datetime(entry["time"]) != dt for entry in queue_entries):
                 logger.info(f"found available time: {dt.isoformat()} ")
                 return dt
         return None
@@ -130,7 +138,7 @@ class TitleQueue(commands.Cog):
 
         entries.sort(key=lambda e: e["time"])
         self.save_queues()
-        await ctx.send(f"Added {get_alias(ctx)} to {QUEUES[queue_name]} queue at {dt.strftime('%Y-%m-%d %H:%M UTC')}.")
+        await ctx.send(f"Added {get_alias(ctx)} to {QUEUES[queue_name]} queue at {dt.astimezone(pytz.UTC).strftime('%Y-%m-%d %H:%M UTC')}.")
         await self.queue_list(ctx, queue_name)
 
 
