@@ -154,3 +154,5 @@ cython_debug/
 
 .idea/
 /data/
+/tests/data/
+/tests/logs/

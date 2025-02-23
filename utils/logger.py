@@ -2,6 +2,7 @@ import logging
 import os
 from logging.handlers import RotatingFileHandler
 
+DEFAULT_LOGGING_LEVEL = os.getenv("DEFAULT_LOGGING_LEVEL", "INFO")
 
 def init_logger(logger_name:str):
 
@@ -10,7 +11,7 @@ def init_logger(logger_name:str):
         os.makedirs('logs')
 
     logger = logging.getLogger(logger_name)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(DEFAULT_LOGGING_LEVEL)
 
     # Create handlers
     console_handler = logging.StreamHandler()

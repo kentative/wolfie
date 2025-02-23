@@ -1,5 +1,7 @@
 discord-py
 python-dotenv~=1.0.1
 pytz~=2025.1
-pytest
-pytest-asyncio
+pytest~=8.3.4
+pytest-asyncio~=0.25.3
+freezegun~=1.5.1
+python-dateutil~=2.9

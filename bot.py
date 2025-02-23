@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 from utils.logger import init_logger
 
-VERSION = "1.1.202502013"
+VERSION = "1.1.20250223"
 
 # Load environment variables
 load_dotenv()

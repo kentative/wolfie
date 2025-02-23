@@ -19,6 +19,8 @@ MONTH_DAY_PATTERNS = [
     "%m/%d",     # 2/14
     "%m-%d",     # 2-14
     "%d-%m",     # 14-2
+    "%d.%m",
+    "%m.%d"
 ]
 
 DATE_PATTERNS = [
@@ -114,6 +116,10 @@ def parse_time_input(input_time: str, user_tz: str='UTC'):
     # only use hour
     now = datetime.now(zone)
     now = now.replace(minute=0, second=0, microsecond=0)
+
+    if not input_time:
+        now = now.replace(minute=0, second=0)
+        return now.strftime("%H:%M:%S")
 
     for pattern in TIME_PATTERNS:
         try:

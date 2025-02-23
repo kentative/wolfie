@@ -47,6 +47,7 @@ class MockMember:
     def __init__(self, mock_id=1, name="test_user", roles=None, is_admin=False):
         self.id = mock_id
         self.name = name
+        self.display_name = "test_display_name"
         self.roles = roles or []
         self.guild_permissions = discord.Permissions()
         self.guild_permissions.update(manage_guild=is_admin)
@@ -73,8 +74,19 @@ def bot():
     return MockBot()
 
 @pytest.fixture
-def ctx():
-    return MockContext()
+def ctx_user1():
+    return MockContext(
+        user_id=1,
+        username="user1"
+    )
+
+@pytest.fixture
+def ctx_user2():
+    return MockContext(user_id=2, username="user2")
+
+@pytest.fixture
+def ctx_user3():
+    return MockContext(user_id=3, username="user3")
 
 @pytest.fixture
 def admin_ctx():
@@ -84,9 +96,3 @@ def admin_ctx():
 def leadership_ctx():
     roles = [MockRole("leadership")]
     return MockContext(roles=roles)
-
-@pytest.fixture
-def mock_command():
-    async def command(self, ctx, *args, **kwargs):
-        return await ctx.send("Command executed")
-    return command

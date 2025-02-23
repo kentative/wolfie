@@ -6,8 +6,9 @@ import discord
 import pytz
 from discord.ext import commands
 
-from core.memory import get_timezone, get_alias, get_alias_by_id, get_timezone_by_id
-from utils.commons import has_required_permissions, parse_datetime, parse_date_input, parse_time_input, ISO_FORMAT, \
+from core.memory import get_alias, get_alias_by_id, get_timezone_by_id, get_prefs
+from tests.conftest import MockContext
+from utils.commons import has_required_permissions, parse_datetime, parse_date_input, parse_time_input, \
     read_iso_datetime
 from utils.logger import init_logger
 
@@ -48,7 +49,7 @@ class TitleQueue(commands.Cog):
         queue = self.queues[queue_name]
         queue_entries = queue['entries']
         cursor = queue['cursor']
-        logger.info(f"- queue_entries: {queue_entries}, cursor: {cursor}")
+        logger.info(f"queue_entries: {json.dumps(queue_entries, indent=2)}, cursor: {cursor}")
 
         current_entry = queue_entries[cursor] \
             if len(queue_entries) > 0 and cursor < len(queue_entries) else None
@@ -62,7 +63,7 @@ class TitleQueue(commands.Cog):
         # use next_available_dt only if it's later than now
         dt = next_available_dt if next_available_dt > now else now
         for i in range(72):  # Check the next 3 days
-            dt = dt + timedelta(hours=i)
+            dt = dt + timedelta(hours=1)
             logger.info(f"next available time + {i} hour={dt} ")
             if all(read_iso_datetime(entry["time"]) != dt for entry in queue_entries):
                 logger.info(f"found available time: {dt.isoformat()} ")
@@ -79,11 +80,17 @@ class TitleQueue(commands.Cog):
         - Example: !queue.add sage 2-15 3PM
         - Queue names: tribune, elder, priest, sage, master, praetorian, border, cavalry
         """
+
+        logger.info(f"{get_prefs(ctx.author.id)}\n "
+                    f"!Queue.add ctx: {ctx.author.id} ({queue_name}, {start_date}, {start_time}) "
+                    f"now: {datetime.now().astimezone(pytz.UTC)}")
+
         if queue_name not in QUEUES:
             await ctx.send(f"Invalid queue. Choose from {', '.join(QUEUES.keys())}.")
             return
 
-        user_tz = get_timezone(ctx)
+        user_id = str(ctx.author.id)
+        user_tz = get_timezone_by_id(user_id)
         now = datetime.now(pytz.timezone(user_tz))
         now = now.replace(minute=0, second=0, microsecond=0)
 
@@ -109,23 +116,26 @@ class TitleQueue(commands.Cog):
             logger.info(f"date input: {start_date} = {parsed_date} time input: {start_time} = {parsed_time}")
             dt = parse_datetime(f'{parsed_date} {parsed_time}', user_tz)
 
-        logger.info(f"final parsed datetime: {dt}")
+        logger.info(f"final parsed datetime: {dt} UTC: {dt.astimezone(pytz.UTC)}")
         if not dt:
+            logger.warn(f"Invalid datetime format {start_date} {start_time}")
             await ctx.send("Invalid start time format. Use 'mm-dd hh'")
             return
 
         if dt < now:
+            logger.warn("Time is in the past")
             await ctx.send("Invalid start time. Please specify the hour in the future.")
             return
 
-        user_id = str(ctx.author.id)
         entries = self.queues[queue_name]["entries"]
         if any(e["user_id"] == user_id and abs(dt - datetime.fromisoformat(e["time"])) < timedelta(days=1) for e in
                entries):
+            logger.warn("Only one entry per day")
             await ctx.send("You can only register once per queue every 24 hours.")
             return
 
         if dt > datetime.now(pytz.UTC) + timedelta(days=3):
+            logger.warn("Can only queue 3 days in advanced")
             await ctx.send("You can only register up to 3 days in advance.")
             return
 
@@ -134,20 +144,24 @@ class TitleQueue(commands.Cog):
             entry_time = read_iso_datetime(entry["time"])
             logger.info(f"entry time {entry_time}")
             if entry_time == dt:
+                logger.warn("Slot already taken")
                 await ctx.send(f"Time slot is already taken. Please select another slot.")
                 return
 
         # queue entry
         entries.append({
             "user_id": user_id,
-            "user_name": ctx.author.display_name,
+            "user_name": get_alias(ctx),
             "time": dt.isoformat()
          })
 
         entries.sort(key=lambda e: e["time"])
         self.save_queues()
+        logger.info(f"Successfully added {ctx.author.id} to queue")
         await ctx.send(f"Added {get_alias(ctx)} to {QUEUES[queue_name]} queue at {dt.astimezone(pytz.UTC).strftime('%Y-%m-%d %H:%M UTC')}.")
-        await self.queue_list(ctx, queue_name)
+
+        if not isinstance(ctx, MockContext):
+            await self.queue_list(ctx, queue_name)
 
 
     @commands.command(name="queue.remove", aliases=['queue.rm', 'q.rm', 'q.remove'])
@@ -215,13 +229,16 @@ class TitleQueue(commands.Cog):
         cursor = queue["cursor"]
         if count + cursor > len(queue):
             count = queue_size - cursor
-            await ctx.send(f"Count value exceeds queue size. Changing to {count}")
+            if count != 1:
+                await ctx.send(f"Count value exceeds queue size. Changing to {count}")
 
-        logger.info(f"Advancing queue. cursor: {cursor} count: {count}")
+        logger.info(f"Advancing queue. cursor: {cursor} count: {count} size: {queue_size}")
         if queue["cursor"] < queue_size:
             queue["cursor"] += count
             self.save_queues()
-            await ctx.send(f"Advanced {queue_name} queue.")
+            entry = queue["entries"][queue["cursor"] -1]
+            await ctx.send(f"<@{entry.get('user_id')}>, your title is available!")
+
         else:
             await ctx.send("No more entries to advance.")
 
