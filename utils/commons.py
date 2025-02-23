@@ -70,7 +70,7 @@ def load_user_prefs():
         logger.info(f'{e}. Creating default preference file')
         return {}
 
-def parse_date_input(input_date: str, user_tz: str='UTC'):
+def parse_date_input(input_date: str, user_tz: str='UTC') -> str:
     """Attempts to parse the input date, if not parsable, return value based on now"""
 
     try:

@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 
 import discord
 import pytz
+from dateutil import parser
 from discord.ext import commands
 
 from core.memory import get_alias, get_alias_by_id, get_timezone_by_id, get_prefs
@@ -155,42 +156,49 @@ class TitleQueue(commands.Cog):
             "time": dt.isoformat()
          })
 
-        entries.sort(key=lambda e: e["time"])
+        entries.sort(key=lambda e: parser.isoparse(e["time"]))
         self.save_queues()
         logger.info(f"Successfully added {ctx.author.id} to queue")
         await ctx.send(f"Added {get_alias(ctx)} to {QUEUES[queue_name]} queue at {dt.astimezone(pytz.UTC).strftime('%Y-%m-%d %H:%M UTC')}.")
 
-        if not isinstance(ctx, MockContext):
+        if not isinstance(ctx, MockContext): # do not list during testing
             await self.queue_list(ctx, queue_name)
 
 
     @commands.command(name="queue.remove", aliases=['queue.rm', 'q.rm', 'q.remove'])
     async def queue_remove(self, ctx,
                            queue_name: str=commands.parameter(description="- the queue name"),
-                           start_time: str=commands.parameter(description="- Optional. ex: 2025-02-14 or 2-15", default=None)):
+                           start_date: str=commands.parameter(description="- Optional. ex: 02-14 or 2-15", default=None)):
         """
         Remove yourself from the queue. Specify the queue name.
-		- Example: !queue.add master
+		- Example 1: !queue.remove master (remove entry for current day)
+		- Example 2: !queue.remove master 2-23 (remove entry for that that day)
         """
+        logger.info(f"{get_prefs(ctx.author.id)}\n "
+                    f"!Queue.remove ctx: {ctx.author.id} ({queue_name}, {start_date}) "
+                    f"now: {datetime.now().astimezone(pytz.UTC)}")
+
         if queue_name not in QUEUES:
+            logger.info(f'invalid queue name {queue_name}')
             await ctx.send(f"Invalid queue. Choose from {', '.join(QUEUES.keys())}.")
             return
 
         user_id = str(ctx.author.id)
+        user_tz = get_timezone_by_id(user_id)
         queue =  self.queues[queue_name]
         cursor = int(queue['cursor'])
         entries = queue["entries"]
 
-        if start_time:
+        if start_date:
             try:
-                dt = (datetime.strptime(start_time, "%H")
-                      .replace(minute=0, second=0, microsecond=0)
-                      .astimezone(pytz.UTC))
+                parsed_date = parse_date_input(start_date, user_tz)
                 entry_to_remove = next((e for e in entries
-                                        if e["user_id"] == user_id and
-                                           datetime.fromisoformat(e["time"]).hour == dt.hour), None)
+                    if e["user_id"] == user_id and
+                       datetime.fromisoformat(e["time"]).strftime("%Y-%m-%d") == parsed_date), None)
+
             except ValueError:
-                await ctx.send("Invalid start time format. Provide at the starting hour.")
+                logger.error(f'Invalid datetime format {start_date}')
+                await ctx.send("Invalid datetime format. Provide the date to remove: 'mm-dd'")
                 return
         else:
             entry_to_remove = next((e for e in entries if e["user_id"] == user_id), None)
@@ -204,7 +212,10 @@ class TitleQueue(commands.Cog):
             entries.remove(entry_to_remove)
             self.save_queues()
             await ctx.send(f"Removed {get_alias(ctx)} from {QUEUES[queue_name]} queue.")
-            await self.queue_list(ctx, queue_name)
+
+            logger.info(f"Successfully remove {ctx.author.id} from {queue_name}")
+            if not isinstance(ctx, MockContext): # do not list during testing
+                await self.queue_list(ctx, queue_name)
         else:
             await ctx.send("No matching entry found to remove.")
 

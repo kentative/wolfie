@@ -43,7 +43,7 @@ class TestTitleQueue:
         for ctx in users:
             await title_queue.queue_add.__call__(title_queue, ctx, "sage", None, None)
 
-        total_entries = self._count_queue_size(title_queue.queues)
+        total_entries = count_queue_size(title_queue.queues)
         assert total_entries == NUM_USERS
         validate_entries(title_queue.queues, "per_hour")
 
@@ -61,7 +61,7 @@ class TestTitleQueue:
             for ctx in users:
                 await title_queue.queue_add.__call__(title_queue, ctx, name, None, None)
 
-        total_entries = self._count_queue_size(title_queue.queues)
+        total_entries = count_queue_size(title_queue.queues)
         assert total_entries == len(queue_names) * NUM_USERS
         validate_entries(title_queue.queues, "per_hour")
 
@@ -84,7 +84,7 @@ class TestTitleQueue:
                 for date in dates:
                     await title_queue.queue_add.__call__(title_queue, ctx, "sage", date, None)
 
-            total_entries = self._count_queue_size(title_queue.queues)
+            total_entries = count_queue_size(title_queue.queues)
             assert total_entries == 2
             validate_entries(title_queue.queues)
 
@@ -108,7 +108,7 @@ class TestTitleQueue:
                 for time in times:
                     await title_queue.queue_add.__call__(title_queue, ctx, "sage", time, None)
 
-            total_entries = self._count_queue_size(title_queue.queues)
+            total_entries = count_queue_size(title_queue.queues)
             assert total_entries == 1
             validate_entries(title_queue.queues)
 
@@ -139,19 +139,19 @@ class TestTitleQueue:
                 for time in times:
                     await title_queue.queue_add.__call__(title_queue, ctx, "sage", date, time)
 
-        total_entries = self._count_queue_size(title_queue.queues)
+        total_entries = count_queue_size(title_queue.queues)
         assert total_entries == 3
         validate_entries(title_queue.queues)
 
-    @staticmethod
-    def _count_queue_size(data):
 
-        entries = {key: len(value["entries"]) for key, value in data.items()}
-        total_count = 0
-        for category, count in entries.items():
-            total_count = total_count + count
+def count_queue_size(data):
 
-        return total_count
+    entries = {key: len(value["entries"]) for key, value in data.items()}
+    total_count = 0
+    for category, count in entries.items():
+        total_count = total_count + count
+
+    return total_count
 
 
 def validate_entries(queues, options=None):
