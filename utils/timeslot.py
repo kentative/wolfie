@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import pytz
 
 DATE_DISPLAY_FORMAT = '%m-%d %H:%M %Z'
-time_mapping = {"t1": "01:00 UTC", "t2": "11:00 UTC", "t3": "17:00 UTC"}
+time_mapping = {"t1": "01:00 UTC", "t2": "11:00 UTC", "t3": "19:00 UTC"}
 
 def get_weekend_dates(user_tz):
     """Returns the dates for the upcoming Saturday (d1) and Sunday (d2) in the user's local timezone."""

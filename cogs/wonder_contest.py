@@ -6,12 +6,12 @@ import discord
 import pytz
 from discord.ext import commands
 
-from core.memory import get_timezone, get_alias, get_prefs, has_prefs
+from core.memory import get_timezone, get_alias, get_prefs
 from utils.logger import init_logger
+from utils.timeslot import time_mapping
 
 WONDER_CONQUEST_TEAM_FILE = "data/wonder_conquest_teams.json"
 DATE_DISPLAY_FORMAT = '%m-%d %H:%M %Z'
-time_mapping = {"t1": "01:00 UTC", "t2": "11:00 UTC", "t3": "17:00 UTC"}
 
 logger = init_logger('WonderContest')
 
