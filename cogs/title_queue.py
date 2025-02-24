@@ -179,7 +179,7 @@ class TitleQueue(commands.Cog):
                     f"now: {datetime.now().astimezone(pytz.UTC)}")
 
         if queue_name not in QUEUES:
-            logger.info(f'invalid queue name {queue_name}')
+            logger.warn(f'invalid queue name {queue_name}')
             await ctx.send(f"Invalid queue. Choose from {', '.join(QUEUES.keys())}.")
             return
 
@@ -197,7 +197,7 @@ class TitleQueue(commands.Cog):
                        datetime.fromisoformat(e["time"]).strftime("%Y-%m-%d") == parsed_date), None)
 
             except ValueError:
-                logger.error(f'Invalid datetime format {start_date}')
+                logger.warn(f'Invalid datetime format {start_date}')
                 await ctx.send("Invalid datetime format. Provide the date to remove: 'mm-dd'")
                 return
         else:

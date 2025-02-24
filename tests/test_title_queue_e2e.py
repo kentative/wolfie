@@ -66,6 +66,7 @@ class TestTitleQueueE2E:
     def _clear(title_queue):
         title_queue.queues = {queue: {"entries": [], "cursor": 0} for queue in QUEUES}
 
+
 def create_datetime(hours: int, days: int = 0):
     now = datetime.now()
     now += timedelta(days=days, hours=hours)
