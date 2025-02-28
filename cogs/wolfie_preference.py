@@ -1,9 +1,11 @@
+from datetime import datetime
+
 import discord
 import pytz
 from discord.ext import commands
 
-from core.memory import USER_PREFS
-from utils.commons import save_user_prefs
+from core.memory import USER_PREFS, get_timezone
+from utils.commons import save_user_prefs, DISPLAY_DATE_TIME_FORMAT
 from utils.logger import init_logger
 
 NAME_LIST_TITLE = 'Wolfie Name List'
@@ -69,11 +71,15 @@ class WolfiePreferences(commands.Cog):
         """Display what Wolfie knows about you."""
 
         embed = discord.Embed(title=NAME_LIST_TITLE, color=discord.Color.dark_embed())
-
+        now = datetime.now()
         for i, value in enumerate(USER_PREFS.values(), start=1):
+
+            user_timezone = pytz.timezone(value.get('timezone'))
+            details = f"currently: {now.astimezone(user_timezone).strftime(DISPLAY_DATE_TIME_FORMAT)}"
+
             embed.add_field(
                 name=f"{i}. {value.get('name')}-{value.get('alias')}-{value.get('timezone')}",
-                value="", inline=False)
+                value=details, inline=False)
 
         await ctx.send(embed=embed)
 

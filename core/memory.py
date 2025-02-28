@@ -6,6 +6,8 @@ logger = init_logger('Memory')
 # load this list for all cogs
 USER_PREFS : dict = load_user_prefs()
 
+# TODO refactor to hold all data in this module
+
 def get_timezone(ctx):
     return (USER_PREFS.get(str(ctx.author.id), {})
             .get('timezone', 'UTC'))
