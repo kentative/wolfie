@@ -12,6 +12,8 @@ NAME_LIST_TITLE = 'Wolfie Name List'
 
 logger = init_logger('WolfiePreferences')
 
+EMOJIS = {"day": "☀️", "night": "💤"}
+
 class WolfiePreferences(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -75,7 +77,10 @@ class WolfiePreferences(commands.Cog):
         for i, value in enumerate(USER_PREFS.values(), start=1):
 
             user_timezone = pytz.timezone(value.get('timezone'))
-            details = f"currently: {now.astimezone(user_timezone).strftime(DISPLAY_DATE_TIME_FORMAT)}"
+            user_datetime = now.astimezone(user_timezone)
+            # TODO use preferred hours
+            day_night = EMOJIS['day'] if 6 < user_datetime.hour < 18 else EMOJIS['night']
+            details = f"{day_night}️ {now.astimezone(user_timezone).strftime(DISPLAY_DATE_TIME_FORMAT)}"
 
             embed.add_field(
                 name=f"{i}. {value.get('name')}-{value.get('alias')}-{value.get('timezone')}",
