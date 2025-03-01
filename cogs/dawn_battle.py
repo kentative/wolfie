@@ -1,10 +1,12 @@
 from datetime import datetime
 
 from discord.ext import commands
+from discord.ext.commands import Context, Command
 
-from cogs.share.registered_battle import RegisteredBattle
+from bot import wolfie
+from cogs.battle.registered_battle import RegisteredBattle, DATE_DISPLAY_FORMAT
 from utils.logger import init_logger
-from utils.timeslot import DATE_DISPLAY_FORMAT
+
 
 BATTLE_NAME = "Battle of Dawn"
 REGISTRATION_FILE = "data/dawn_battle_registration.json"
@@ -36,9 +38,22 @@ def find_class(class_input: str):
 class DawnBattle(RegisteredBattle):
     def __init__(self, bot):
         super().__init__(BATTLE_NAME, REGISTRATION_FILE, bot)
+        self.wolfie = wolfie
+
+    @commands.command(name="dawn.test", aliases=['d.test', 'test'])
+    async def dawn_test(self, ctx: Context, *question: str):
+
+        dawn_add: Command = ctx.bot.get_command("dawn.add")
+        self.wolfie.register_function(
+            name=dawn_add.name,
+            description=dawn_add.description,
+            parameters=dawn_add.params)
+
+        response = self.wolfie.ask(question)
+        await ctx.send(response)
 
     @commands.command(name="dawn.add", aliases=['d.add', 'dawn', 'd'])
-    async def dawn_add(self, ctx,
+    async def add(self, ctx,
                      day: str=commands.parameter(description="use d1 or d2"),
                      time: str=commands.parameter(description="use t1, t2 or t3"),
                      battle_class: str = commands.parameter(description="one of 'CourtSage, ShadowWalker, Monk, Centurion, Ranger, Guardian, Zealot, Magistrate'")):
@@ -54,7 +69,7 @@ class DawnBattle(RegisteredBattle):
         })
 
     @commands.command(name="dawn.remove", aliases=['d.remove', 'd.rm', 'dawn.rm'])
-    async def dawn_remove(self, ctx,
+    async def remove(self, ctx,
                      day: str=commands.parameter(description="use d1 or d2"),
                      time: str=commands.parameter(description="use t1, t2 or t3")):
         """Unregister user for a specific day and time slot."""
@@ -69,14 +84,14 @@ class DawnBattle(RegisteredBattle):
         pass
 
     @commands.command(name="dawn.list", aliases=['dawn.ls', 'd.ls', 'd.list'])
-    async def dawn_list(self, ctx, options:str = commands.parameter(description="supported options: 'all'", default="")):
+    async def list(self, ctx, options:str = commands.parameter(description="supported options: 'all'", default="")):
         """List current registration information in UTC."""
 
-        await self.list_registration(ctx, options, format_member_details=
-            lambda prefs, entry, user_datetime: self.format_member(prefs, entry, user_datetime))
+        await self.list_registration(ctx, options, lambda prefs, entry, user_datetime: self._format_member(prefs, entry,
+                                                                                                           user_datetime))
 
     @staticmethod
-    def format_member(prefs: dict, entry: dict, user_datetime: datetime):
+    def _format_member(prefs: dict, entry: dict, user_datetime: datetime):
         context = entry.get('context', {})
         role = context.get('role', 'Unknown')
         return f'[**{role}**] {prefs.get("alias", "Unknown")} ({user_datetime.strftime(DATE_DISPLAY_FORMAT)})'

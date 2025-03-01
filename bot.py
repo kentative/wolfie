@@ -5,6 +5,7 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
+from core.brain import WolfieAgent
 from utils.logger import init_logger
 
 VERSION = "1.1.20250223"
@@ -22,6 +23,7 @@ intents.message_content = True
 intents.members = True
 
 bot = commands.Bot(command_prefix=PREFIX, intents=intents)
+wolfie = WolfieAgent()
 
 @bot.event
 async def on_ready():
@@ -52,3 +54,5 @@ if __name__ == '__main__':
         exit(1)
     
     bot.run(TOKEN)
+
+
