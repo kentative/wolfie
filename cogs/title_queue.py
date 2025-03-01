@@ -7,7 +7,6 @@ import pytz
 from dateutil import parser
 from discord.ext import commands
 
-from core.memory import get_alias, get_alias_by_id, get_timezone_by_id, get_prefs
 from tests.conftest import MockContext
 from utils.commons import has_required_permissions, parse_datetime, parse_date_input, parse_time_input, \
     read_iso_datetime
@@ -32,6 +31,7 @@ class TitleQueue(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.queues = {queue: {"entries": [], "cursor": 0} for queue in QUEUES}
+        self.memory = self.bot.memory
         self.load_queues()
 
     def load_queues(self):
@@ -81,8 +81,8 @@ class TitleQueue(commands.Cog):
         - Example: !queue.add sage 2-15 3PM
         - Queue names: tribune, elder, priest, sage, master, praetorian, border, cavalry
         """
-
-        logger.info(f"{get_prefs(ctx.author.id)}\n "
+        users_prefs = await self.memory.get_prefs(ctx.author.id)
+        logger.info(f"{users_prefs}\n "
                     f"!Queue.add ctx: {ctx.author.id} ({queue_name}, {start_date}, {start_time}) "
                     f"now: {datetime.now().astimezone(pytz.UTC)}")
 
@@ -91,7 +91,7 @@ class TitleQueue(commands.Cog):
             return
 
         user_id = str(ctx.author.id)
-        user_tz = get_timezone_by_id(user_id)
+        user_tz = await self.memory.get_timezone_by_id(user_id)
         now = datetime.now(pytz.timezone(user_tz))
         now = now.replace(minute=0, second=0, microsecond=0)
 
@@ -152,14 +152,15 @@ class TitleQueue(commands.Cog):
         # queue entry
         entries.append({
             "user_id": user_id,
-            "user_name": get_alias(ctx),
+            "user_name": await self.memory.get_alias(ctx),
             "time": dt.isoformat()
          })
 
         entries.sort(key=lambda e: parser.isoparse(e["time"]))
         self.save_queues()
         logger.info(f"Successfully added {ctx.author.id} to queue")
-        await ctx.send(f"Added {get_alias(ctx)} to {QUEUES[queue_name]} queue at {dt.astimezone(pytz.UTC).strftime('%Y-%m-%d %H:%M UTC')}.")
+        user_alias = await self.memory.get_alias(ctx)
+        await ctx.send(f"Added {user_alias} to {QUEUES[queue_name]} queue at {dt.astimezone(pytz.UTC).strftime('%Y-%m-%d %H:%M UTC')}.")
 
         if not isinstance(ctx, MockContext): # do not list during testing
             await self.queue_list(ctx, queue_name)
@@ -174,7 +175,8 @@ class TitleQueue(commands.Cog):
 		- Example 1: !queue.remove master (remove entry for current day)
 		- Example 2: !queue.remove master 2-23 (remove entry for that that day)
         """
-        logger.info(f"{get_prefs(ctx.author.id)}\n "
+        user_prefs = await self.memory.get_prefs(ctx.author.id)
+        logger.info(f"{user_prefs}\n "
                     f"!Queue.remove ctx: {ctx.author.id} ({queue_name}, {start_date}) "
                     f"now: {datetime.now().astimezone(pytz.UTC)}")
 
@@ -184,7 +186,7 @@ class TitleQueue(commands.Cog):
             return
 
         user_id = str(ctx.author.id)
-        user_tz = get_timezone_by_id(user_id)
+        user_tz = await self.memory.get_timezone_by_id(user_id)
         queue =  self.queues[queue_name]
         cursor = int(queue['cursor'])
         entries = queue["entries"]
@@ -211,7 +213,8 @@ class TitleQueue(commands.Cog):
 
             entries.remove(entry_to_remove)
             self.save_queues()
-            await ctx.send(f"Removed {get_alias(ctx)} from {QUEUES[queue_name]} queue.")
+            user_alias = await self.memory.get_alias(ctx)
+            await ctx.send(f"Removed {user_alias} from {QUEUES[queue_name]} queue.")
 
             logger.info(f"Successfully remove {ctx.author.id} from {queue_name}")
             if not isinstance(ctx, MockContext): # do not list during testing
@@ -296,13 +299,13 @@ class TitleQueue(commands.Cog):
 
                 logger.info(f"{queue_name} entry: {entry}")
                 entry_id = entry['user_id']
-                entry_alias = get_alias_by_id(entry_id, entry.get('user_name'))
+                entry_alias = await self.memory.get_alias_by_id(entry_id, entry.get('user_name'))
 
                 # message details
                 emoji = EMOJIS["past"] if i < queue["cursor"] \
                     else (EMOJIS["current"] if i == queue["cursor"] else EMOJIS["waiting"])
 
-                entry_tz =  pytz.timezone(get_timezone_by_id(entry_id))
+                entry_tz =  pytz.timezone(await self.memory.get_timezone_by_id(entry_id))
                 dt = datetime.fromisoformat(entry["time"])
 
                 description = f"{dt.astimezone(entry_tz).strftime('%m-%d %H:%M')} {entry_tz}" \

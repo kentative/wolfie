@@ -5,7 +5,8 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from core.brain import WolfieAgent
+from core.brain import Brain
+from core.memory import Memory
 from utils.logger import init_logger
 
 VERSION = "1.1.20250223"
@@ -23,7 +24,8 @@ intents.message_content = True
 intents.members = True
 
 bot = commands.Bot(command_prefix=PREFIX, intents=intents)
-wolfie = WolfieAgent()
+bot.memory = Memory()
+bot.brain = Brain()
 
 @bot.event
 async def on_ready():

@@ -9,7 +9,7 @@ load_dotenv()
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
 
-class WolfieAgent:
+class Brain:
     def __init__(self):
         """
         Initialize the WolfieAgent with Gemini API.

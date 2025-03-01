@@ -6,7 +6,6 @@ import discord
 import pytz
 from discord.ext import commands
 
-from core.memory import get_timezone, get_alias, get_prefs
 from utils.logger import init_logger
 
 DATE_DISPLAY_FORMAT = '%m-%d %H:%M %Z'
@@ -46,7 +45,7 @@ class RegisteredBattle(commands.Cog):
     def __init__(self, title: str, file: str, bot):
         self.battle_title = title
         self.data_file = file
-        self.bot = bot
+        self.memory = bot.memory
         self.teams = {  # Dictionary to store team registrations
             "d1": {"t1": {}, "t2": {}, "t3": {}},
             "d2": {"t1": {}, "t2": {}, "t3": {}}
@@ -92,10 +91,11 @@ class RegisteredBattle(commands.Cog):
 
         self.save_teams()
 
-        user_tz = get_timezone(ctx)
+        user_tz = await self.memory.get_timezone(ctx)
         utc_datetime = convert_timeslot_to_utc(day, time)
         local_time = convert_utc_to_local(user_tz, utc_datetime)
-        await ctx.send(f"{get_alias(ctx)} has been registered for {local_time.strftime(DATE_DISPLAY_FORMAT)}")
+        user_alias = await self.memory.get_alias(ctx)
+        await ctx.send(f"{user_alias} has been registered for {local_time.strftime(DATE_DISPLAY_FORMAT)}")
 
     async def unregister(self, ctx,
                      day: str = commands.parameter(description="use d1 or d2"),
@@ -115,7 +115,8 @@ class RegisteredBattle(commands.Cog):
             del team[user_id]  # Remove the user from the time slot
             self.save_teams()
             logger.info("Successfully removed.")
-            await ctx.send(f"{get_alias(ctx)} has been removed from {day.upper()} {time.upper()}.")
+            user_alias = await self.memory.get_alias(ctx)
+            await ctx.send(f"{user_alias} has been removed from {day.upper()} {time.upper()}.")
         else:
             logger.warn("Not registered for this time slot.")
             await ctx.send("You are not registered for this time slot.")
@@ -143,7 +144,7 @@ class RegisteredBattle(commands.Cog):
 
                 member_details = []
                 for user_id, entry in members.items():
-                    prefs = get_prefs(user_id)
+                    prefs = await self.memory.get_prefs(user_id)
                     logger.info(f"Listing {prefs} for registered battle")
                     user_datetime = convert_utc_to_local(prefs.get('timezone', 'UTC'), f'{utc_date} {utc_time}')
 

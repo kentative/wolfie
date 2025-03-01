@@ -7,6 +7,10 @@ from discord.ext import commands
 
 from typing import List
 
+from core.brain import Brain
+from core.memory import Memory
+
+
 class MockCommand:
     def __init__(self, name: str):
         self.name = name
@@ -26,6 +30,8 @@ class MockBot:
         self.user = discord.Object(id=1)
         self.command_prefix = "!"
         self.commands: List[commands.Command] = []
+        self.memory = Memory()
+        self.brain = Brain()
 
     async def get_prefix(self, message):
         return self.command_prefix

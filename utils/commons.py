@@ -14,7 +14,7 @@ USER_PREFERENCES_PATH = "data/user_preferences.json"
 logger = init_logger('utils')
 
 ISO_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
-DISPLAY_DATE_TIME_FORMAT = "%m-%d %I:%M"
+DISPLAY_DATE_TIME_FORMAT = "%m-%d %I:%M %p"
 
 MONTH_DAY_PATTERNS = [
     "%d/%m",     # 14/2

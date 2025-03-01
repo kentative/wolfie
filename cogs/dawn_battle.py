@@ -3,7 +3,7 @@ from datetime import datetime
 from discord.ext import commands
 from discord.ext.commands import Context, Command
 
-from bot import wolfie
+
 from cogs.battle.registered_battle import RegisteredBattle, DATE_DISPLAY_FORMAT
 from utils.logger import init_logger
 
@@ -38,7 +38,8 @@ def find_class(class_input: str):
 class DawnBattle(RegisteredBattle):
     def __init__(self, bot):
         super().__init__(BATTLE_NAME, REGISTRATION_FILE, bot)
-        self.wolfie = wolfie
+        self.wolfie = bot.brain
+
 
     @commands.command(name="dawn.test", aliases=['d.test', 'test'])
     async def dawn_test(self, ctx: Context, *question: str):

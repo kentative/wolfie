@@ -4,8 +4,7 @@ import discord
 import pytz
 from discord.ext import commands
 
-from core.memory import USER_PREFS, get_timezone
-from utils.commons import save_user_prefs, DISPLAY_DATE_TIME_FORMAT
+from utils.commons import DISPLAY_DATE_TIME_FORMAT
 from utils.logger import init_logger
 
 NAME_LIST_TITLE = 'Wolfie Name List'
@@ -14,7 +13,7 @@ logger = init_logger('WolfiePreferences')
 
 EMOJIS = {"day": "☀️", "night": "💤"}
 
-class WolfiePreferences(commands.Cog):
+class Preferences(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -29,16 +28,16 @@ class WolfiePreferences(commands.Cog):
         embed = discord.Embed(title=NAME_LIST_TITLE,
                               color=discord.Color.dark_embed())
 
-        pref = USER_PREFS.get(str(ctx.author.id), {})
+        pref = await self.bot.memory.get_prefs(str(ctx.author.id), {})
         if pref.get('alias') != alias:
             pref.update({
                 'name': ctx.author.display_name,
                 'alias': alias,
                 'timezone': timezone
             })
-            USER_PREFS[str(ctx.author.id)] = pref
+            await self.bot.memory.update_prefs(str(ctx.author.id), pref)
             embed.add_field(name=f"{ctx.author.name}", value=f"is known to wolfie as {alias}", inline=False)
-            save_user_prefs(USER_PREFS)
+            await self.bot.memory.save_prefs()
         else:
             await ctx.send("Wolfie already knows your name")
             return
@@ -55,13 +54,13 @@ class WolfiePreferences(commands.Cog):
             try:
                 zone:str = pytz.timezone(timezone_name).zone  # Validate timezone
 
-                pref = USER_PREFS.get(str(ctx.author.id), {})
+                pref = await self.bot.memory.get_prefs(str(ctx.author.id), {})
                 pref.update({
                     'name': ctx.author.display_name,
                     'timezone' : zone
                 })
-                USER_PREFS[str(ctx.author.id)] = pref
-                save_user_prefs(USER_PREFS)
+                await self.bot.memory.update_prefs(str(ctx.author.id), pref)
+                await self.bot.memory.save_prefs()
 
                 await ctx.send(f"Timezone set to {zone}.")
             except pytz.UnknownTimeZoneError:
@@ -74,7 +73,8 @@ class WolfiePreferences(commands.Cog):
 
         embed = discord.Embed(title=NAME_LIST_TITLE, color=discord.Color.dark_embed())
         now = datetime.now()
-        for i, value in enumerate(USER_PREFS.values(), start=1):
+        all_prefs = await self.bot.memory.get_prefs_all()
+        for i, value in enumerate(all_prefs.values(), start=1):
 
             user_timezone = pytz.timezone(value.get('timezone'))
             user_datetime = now.astimezone(user_timezone)
@@ -89,4 +89,4 @@ class WolfiePreferences(commands.Cog):
         await ctx.send(embed=embed)
 
 async def setup(bot):
-    await bot.add_cog(WolfiePreferences(bot))
+    await bot.add_cog(Preferences(bot))
