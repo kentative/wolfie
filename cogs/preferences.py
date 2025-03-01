@@ -76,7 +76,8 @@ class Preferences(commands.Cog):
         all_prefs = await self.bot.memory.get_prefs_all()
         for i, value in enumerate(all_prefs.values(), start=1):
 
-            user_timezone = pytz.timezone(value.get('timezone'))
+            tz = value.get('timezone') or 'UTC'
+            user_timezone = pytz.timezone(tz)
             user_datetime = now.astimezone(user_timezone)
             # TODO use preferred hours
             day_night = EMOJIS['day'] if 6 < user_datetime.hour < 18 else EMOJIS['night']
