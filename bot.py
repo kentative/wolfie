@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from core.cortex import Cortex
 from utils.logger import init_logger
 
-VERSION = "1.1.20250223"
+VERSION = "1.2025.03.01-cortex"
 
 # Load environment variables
 load_dotenv()
@@ -42,7 +42,7 @@ async def on_ready():
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
-        await ctx.send(f"Command not found. Use `{PREFIX}q-help` to see available cwommands.")
+        await ctx.send(f"Command not found. Use `{PREFIX}q-help` to see available commands.")
     elif isinstance(error, commands.MissingPermissions):
         await ctx.send("You don't have permission to use this command.")
     else:
