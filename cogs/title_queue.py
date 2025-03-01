@@ -81,7 +81,7 @@ class TitleQueue(commands.Cog):
         - Example: !queue.add sage 2-15 3PM
         - Queue names: tribune, elder, priest, sage, master, praetorian, border, cavalry
         """
-        users_prefs = await self.memory.get_prefs(ctx.author.id)
+        users_prefs = await self.memory.get_prefs(ctx)
         logger.info(f"{users_prefs}\n "
                     f"!Queue.add ctx: {ctx.author.id} ({queue_name}, {start_date}, {start_time}) "
                     f"now: {datetime.now().astimezone(pytz.UTC)}")
@@ -175,7 +175,7 @@ class TitleQueue(commands.Cog):
 		- Example 1: !queue.remove master (remove entry for current day)
 		- Example 2: !queue.remove master 2-23 (remove entry for that that day)
         """
-        user_prefs = await self.memory.get_prefs(ctx.author.id)
+        user_prefs = await self.memory.get_prefs(ctx)
         logger.info(f"{user_prefs}\n "
                     f"!Queue.remove ctx: {ctx.author.id} ({queue_name}, {start_date}) "
                     f"now: {datetime.now().astimezone(pytz.UTC)}")

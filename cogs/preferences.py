@@ -28,7 +28,7 @@ class Preferences(commands.Cog):
         embed = discord.Embed(title=NAME_LIST_TITLE,
                               color=discord.Color.dark_embed())
 
-        pref = await self.bot.memory.get_prefs(str(ctx.author.id), {})
+        pref = await self.bot.memory.get_prefs(ctx)
         if pref.get('alias') != alias:
             pref.update({
                 'name': ctx.author.display_name,
@@ -54,7 +54,7 @@ class Preferences(commands.Cog):
             try:
                 zone:str = pytz.timezone(timezone_name).zone  # Validate timezone
 
-                pref = await self.bot.memory.get_prefs(str(ctx.author.id), {})
+                pref = await self.bot.memory.get_prefs(ctx)
                 pref.update({
                     'name': ctx.author.display_name,
                     'timezone' : zone

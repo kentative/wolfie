@@ -144,7 +144,7 @@ class RegisteredBattle(commands.Cog):
 
                 member_details = []
                 for user_id, entry in members.items():
-                    prefs = await self.memory.get_prefs(user_id)
+                    prefs = await self.memory.get_prefs_by_id(user_id)
                     logger.info(f"Listing {prefs} for registered battle")
                     user_datetime = convert_utc_to_local(prefs.get('timezone', 'UTC'), f'{utc_date} {utc_time}')
 

@@ -31,16 +31,16 @@ class Memory:
         async with self._lock:
             return self._user_prefs.get(str(user_id), {}).get('alias', default)
 
-    async def has_prefs(self, user_id: str):
+    async def get_prefs(self, ctx):
         async with self._lock:
-            return str(user_id) in self._user_prefs
-
-    async def get_prefs(self, user_id: str):
-        async with self._lock:
-            prefs = self._user_prefs.get(str(user_id), {})
+            prefs = self._user_prefs.get(str(ctx.author.id), {})
             if not prefs:
-                return self.create_default_preferences_dict(user_id)
+                return self.create_default_preferences(ctx)
             return prefs
+
+    async def get_prefs_by_id(self, user_id):
+        async with self._lock:
+            return self._user_prefs.get(str(user_id), {})
 
     async def get_prefs_all(self):
         """
@@ -61,15 +61,6 @@ class Memory:
             logger.info(f'created default preferences for {ctx.author.id} = {prefs}')
             await self.save_prefs()
             return prefs
-
-    @staticmethod
-    def create_default_preferences_dict(user_id: str):
-        # Helper method for creating default prefs without context
-        return {
-            'name': str(user_id),
-            'alias': str(user_id),
-            'timezone': 'UTC'
-        }
 
     async def save_prefs(self):
         async with self._lock:
