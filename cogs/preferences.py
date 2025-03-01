@@ -84,7 +84,7 @@ class Preferences(commands.Cog):
             details = f"{day_night}️ {now.astimezone(user_timezone).strftime(DISPLAY_DATE_TIME_FORMAT)}"
 
             embed.add_field(
-                name=f"{i}. {value.get('name')}-{value.get('alias')}-{value.get('timezone')}",
+                name=f"{i}. {value.get('alias')}-{value.get('timezone')}",
                 value=details, inline=False)
 
         await ctx.send(embed=embed)
