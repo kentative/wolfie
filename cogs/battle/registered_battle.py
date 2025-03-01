@@ -7,6 +7,7 @@ import pytz
 from discord.ext import commands
 
 from utils.logger import init_logger
+from utils.prefs_utils import get_timezone, get_alias
 
 DATE_DISPLAY_FORMAT = '%m-%d %H:%M %Z'
 TIME_MAPPING = {"t1": "01:00 UTC", "t2": "11:00 UTC", "t3": "19:00 UTC"}
@@ -45,7 +46,7 @@ class RegisteredBattle(commands.Cog):
     def __init__(self, title: str, file: str, bot):
         self.battle_title = title
         self.data_file = file
-        self.memory = bot.memory
+        self.cortex = bot.cortex
         self.teams = {  # Dictionary to store team registrations
             "d1": {"t1": {}, "t2": {}, "t3": {}},
             "d2": {"t1": {}, "t2": {}, "t3": {}}
@@ -91,10 +92,13 @@ class RegisteredBattle(commands.Cog):
 
         self.save_teams()
 
-        user_tz = await self.memory.get_timezone(ctx)
+        # User data
+        user_prefs = await self.cortex.get_preferences(ctx)
+        user_tz = get_timezone(user_prefs)
+        user_alias = get_alias(user_prefs)
+
         utc_datetime = convert_timeslot_to_utc(day, time)
         local_time = convert_utc_to_local(user_tz, utc_datetime)
-        user_alias = await self.memory.get_alias(ctx)
         await ctx.send(f"{user_alias} has been registered for {local_time.strftime(DATE_DISPLAY_FORMAT)}")
 
     async def unregister(self, ctx,
@@ -111,11 +115,14 @@ class RegisteredBattle(commands.Cog):
         team: dict = self.teams[day][time]
         user_id = str(ctx.author.id)
 
+        # User data
+        user_prefs = await self.cortex.get_preferences(ctx)
+        user_alias = get_alias(user_prefs)
+
         if user_id in team:
             del team[user_id]  # Remove the user from the time slot
             self.save_teams()
             logger.info("Successfully removed.")
-            user_alias = await self.memory.get_alias(ctx)
             await ctx.send(f"{user_alias} has been removed from {day.upper()} {time.upper()}.")
         else:
             logger.warn("Not registered for this time slot.")
@@ -135,6 +142,7 @@ class RegisteredBattle(commands.Cog):
         d1_date, d2_date = get_weekend_dates('UTC')
         day_mapping = {"d1": d1_date, "d2": d2_date}
 
+        all_prefs = await self.cortex.get_all_preferences()
         embed = discord.Embed(title=self.battle_title, color=discord.Color.dark_gold())
         for day, slots in self.teams.items():
             for time, members in slots.items():
@@ -144,7 +152,7 @@ class RegisteredBattle(commands.Cog):
 
                 member_details = []
                 for user_id, entry in members.items():
-                    prefs = await self.memory.get_prefs_by_id(user_id)
+                    prefs = all_prefs.get(user_id, {})
                     logger.info(f"Listing {prefs} for registered battle")
                     user_datetime = convert_utc_to_local(prefs.get('timezone', 'UTC'), f'{utc_date} {utc_time}')
 

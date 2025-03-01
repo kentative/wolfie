@@ -5,7 +5,7 @@ import pytest_asyncio
 from dotenv import load_dotenv
 from freezegun import freeze_time
 
-from tests.test_title_queue import validate_entries, count_queue_size
+from tests.cogs.test_title_queue import validate_entries, count_queue_size
 
 load_dotenv()
 

@@ -8,9 +8,10 @@ from dateutil import parser
 from discord.ext import commands
 
 from tests.conftest import MockContext
-from utils.commons import has_required_permissions, parse_datetime, parse_date_input, parse_time_input, \
+from utils.datetime_utils import has_required_permissions, parse_datetime, parse_date_input, parse_time_input, \
     read_iso_datetime
 from utils.logger import init_logger
+from utils.prefs_utils import get_timezone, get_alias, get_alias_by_id
 
 QUEUE_FILE = "data/queue_data.json"
 QUEUES = {
@@ -29,9 +30,8 @@ logger = init_logger('TitleQueue')
 
 class TitleQueue(commands.Cog):
     def __init__(self, bot):
-        self.bot = bot
         self.queues = {queue: {"entries": [], "cursor": 0} for queue in QUEUES}
-        self.memory = self.bot.memory
+        self.cortex = bot.cortex
         self.load_queues()
 
     def load_queues(self):
@@ -81,8 +81,8 @@ class TitleQueue(commands.Cog):
         - Example: !queue.add sage 2-15 3PM
         - Queue names: tribune, elder, priest, sage, master, praetorian, border, cavalry
         """
-        users_prefs = await self.memory.get_prefs(ctx)
-        logger.info(f"{users_prefs}\n "
+        user_prefs = await self.cortex.get_preferences(ctx)
+        logger.info(f"{user_prefs}\n "
                     f"!Queue.add ctx: {ctx.author.id} ({queue_name}, {start_date}, {start_time}) "
                     f"now: {datetime.now().astimezone(pytz.UTC)}")
 
@@ -91,7 +91,7 @@ class TitleQueue(commands.Cog):
             return
 
         user_id = str(ctx.author.id)
-        user_tz = await self.memory.get_timezone_by_id(user_id)
+        user_tz = get_timezone(user_prefs)
         now = datetime.now(pytz.timezone(user_tz))
         now = now.replace(minute=0, second=0, microsecond=0)
 
@@ -149,17 +149,17 @@ class TitleQueue(commands.Cog):
                 await ctx.send(f"Time slot is already taken. Please select another slot.")
                 return
 
-        # queue entry
+        # queue entry``
         entries.append({
             "user_id": user_id,
-            "user_name": await self.memory.get_alias(ctx),
+            "user_name": get_alias(user_prefs),
             "time": dt.isoformat()
          })
 
         entries.sort(key=lambda e: parser.isoparse(e["time"]))
         self.save_queues()
         logger.info(f"Successfully added {ctx.author.id} to queue")
-        user_alias = await self.memory.get_alias(ctx)
+        user_alias = get_alias(user_prefs)
         await ctx.send(f"Added {user_alias} to {QUEUES[queue_name]} queue at {dt.astimezone(pytz.UTC).strftime('%Y-%m-%d %H:%M UTC')}.")
 
         if not isinstance(ctx, MockContext): # do not list during testing
@@ -175,7 +175,7 @@ class TitleQueue(commands.Cog):
 		- Example 1: !queue.remove master (remove entry for current day)
 		- Example 2: !queue.remove master 2-23 (remove entry for that that day)
         """
-        user_prefs = await self.memory.get_prefs(ctx)
+        user_prefs = await self.cortex.get_preferences(ctx)
         logger.info(f"{user_prefs}\n "
                     f"!Queue.remove ctx: {ctx.author.id} ({queue_name}, {start_date}) "
                     f"now: {datetime.now().astimezone(pytz.UTC)}")
@@ -186,7 +186,7 @@ class TitleQueue(commands.Cog):
             return
 
         user_id = str(ctx.author.id)
-        user_tz = await self.memory.get_timezone_by_id(user_id)
+        user_tz = get_timezone(user_prefs)
         queue =  self.queues[queue_name]
         cursor = int(queue['cursor'])
         entries = queue["entries"]
@@ -213,7 +213,7 @@ class TitleQueue(commands.Cog):
 
             entries.remove(entry_to_remove)
             self.save_queues()
-            user_alias = await self.memory.get_alias(ctx)
+            user_alias = get_alias(user_prefs)
             await ctx.send(f"Removed {user_alias} from {QUEUES[queue_name]} queue.")
 
             logger.info(f"Successfully remove {ctx.author.id} from {queue_name}")
@@ -283,6 +283,7 @@ class TitleQueue(commands.Cog):
         embed = discord.Embed(title="👑 --= IMPERIAL TITLES =-- 👑", color=discord.Color.dark_gold())
         embed.add_field(name="", value="", inline=False)
 
+        all_prefs = self.cortex.get_all_preferences()
         for queue_name in queue_names:
             if queue_name.lower() not in QUEUES:
                 continue
@@ -299,7 +300,7 @@ class TitleQueue(commands.Cog):
 
                 logger.info(f"{queue_name} entry: {entry}")
                 entry_id = entry['user_id']
-                entry_alias = await self.memory.get_alias_by_id(entry_id, entry.get('user_name'))
+                entry_alias = get_alias_by_id(entry_id, all_prefs)
 
                 # message details
                 emoji = EMOJIS["past"] if i < queue["cursor"] \

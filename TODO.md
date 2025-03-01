@@ -1,6 +1,9 @@
 1. ~~Refactor wonder_conquest to use base class~~
 2. ~~Clean up core module, use async~~
-3. Refactor to use Single cog data interactions design 
+3. Refactor to use Single cog data interactions design
+   1. ~~refactor preferences data~~
+   2. refactor queue data
+   3. refactor battle data
 4. Implement Multi cog data interaction
 5. Implement Agentic cog interaction
 
@@ -9,15 +12,15 @@
 ## Structure
 bot
 - core
-  - thalamus (sensory transmission, motor signals)
-    - provide data from multiple cogs: (get_xxx)
-  - cortex (neocortex, high order thinking)
   - ganglia (motor control, procedural memory, habit)
     - provide data from a single cog: (get_cog_data, update_cog_data)
     - persist data (i.e., data/cog_data.json)
       - preferences: CogData
       - queues: CogData
       - battles: CogData
+  - thalamus (sensory transmission, motor signals)
+    - provide data from multiple cogs: (get_xxx)
+  - cortex (neocortex, high order thinking)
 
 - cogs
   - preferences: store user settings and preferences

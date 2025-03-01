@@ -69,7 +69,7 @@ def load_user_prefs():
             data = json.load(file)
             return data
     except Exception as e:
-        logger.info(f'{e}. Creating default preference file')
+        logger.info(f'{e}. Creating default preferences file')
         return {}
 
 def parse_date_input(input_date: str, user_tz: str='UTC') -> str:

@@ -1,7 +1,6 @@
 import pytest
 import pytest_asyncio
 
-from cogs.dawn_battle import DawnBattle
 from cogs.wonder_battle import WonderBattle
 
 

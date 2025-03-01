@@ -3,10 +3,10 @@ import traceback
 
 import discord
 from discord.ext import commands
+from discord.ext.commands import Bot
 from dotenv import load_dotenv
 
-from core.brain import Brain
-from core.memory import Memory
+from core.cortex import Cortex
 from utils.logger import init_logger
 
 VERSION = "1.1.20250223"
@@ -23,9 +23,8 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
-bot = commands.Bot(command_prefix=PREFIX, intents=intents)
-bot.memory = Memory()
-bot.brain = Brain()
+bot = Bot(command_prefix=PREFIX, intents=intents)
+bot.cortext = Cortex()
 
 @bot.event
 async def on_ready():

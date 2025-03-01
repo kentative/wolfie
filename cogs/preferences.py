@@ -4,7 +4,8 @@ import discord
 import pytz
 from discord.ext import commands
 
-from utils.commons import DISPLAY_DATE_TIME_FORMAT
+from core.cortex import Cortex
+from utils.datetime_utils import DISPLAY_DATE_TIME_FORMAT
 from utils.logger import init_logger
 
 NAME_LIST_TITLE = 'Wolfie Name List'
@@ -15,7 +16,7 @@ EMOJIS = {"day": "☀️", "night": "💤"}
 
 class Preferences(commands.Cog):
     def __init__(self, bot):
-        self.bot = bot
+        self.cortex: Cortex = bot.cortex
 
     @commands.command(name='wolfie.set', aliases=['wolfie.set.prefs', 'wolfie.prefs', 'wolfie.me'])
     async def set_name(self, ctx,
@@ -25,23 +26,40 @@ class Preferences(commands.Cog):
         Tell Wolfie your name and timezone.
         Find timezone here: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
         """
-        embed = discord.Embed(title=NAME_LIST_TITLE,
-                              color=discord.Color.dark_embed())
 
-        pref = await self.bot.memory.get_prefs(ctx)
-        if pref.get('alias') != alias:
-            pref.update({
-                'name': ctx.author.display_name,
-                'alias': alias,
-                'timezone': timezone
-            })
-            await self.bot.memory.update_prefs(str(ctx.author.id), pref)
+        # Validate parameters
+        if not alias:
+            await ctx.send("Please provide an alias.")
+            return
+        try:
+            timezone = pytz.timezone(timezone).zone
+        except pytz.UnknownTimeZoneError:
+            logger.error(f"Invalid timezone: {timezone}")
+            ctx.send("Invalid timezone. Please provide a valid timezone id.")
+            return
+
+        # Prepare the preference data
+        pref = await self.cortex.get_preferences(ctx)
+        new_pref = {
+            'name': ctx.author.display_name,
+            'alias': alias,
+            'timezone': timezone
+        }
+
+        # Perform the update
+        if any(pref.get(k) != v for k, v in new_pref.items()):
+            pref.update(new_pref)
+            await self.cortex.update_preferences(ctx, pref)
+            embed = discord.Embed(title=NAME_LIST_TITLE,
+                              color=discord.Color.dark_embed())
             embed.add_field(name=f"{ctx.author.name}", value=f"is known to wolfie as {alias}", inline=False)
-            await self.bot.memory.save_prefs()
+            await self.cortex.remember()
         else:
+            logger.info("preferences not changed")
             await ctx.send("Wolfie already knows your name")
             return
 
+        logger.info(f"preferences updated for {ctx.author.name}")
         await ctx.send(embed=embed)
 
 
@@ -49,18 +67,18 @@ class Preferences(commands.Cog):
     async def set_timezone(self, ctx, timezone_name: str=commands.parameter(description="- your local timezone")):
             """
             Tell Wolfie your local timezone. Wolfie use your local timezone when display info requested by you.
-            Defaults to UTC. Find timezone here: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
+            Defaults to UTC. Find timezone here: (https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
             """
             try:
                 zone:str = pytz.timezone(timezone_name).zone  # Validate timezone
 
-                pref = await self.bot.memory.get_prefs(ctx)
+                pref = await self.cortex.get_preferences(ctx)
                 pref.update({
                     'name': ctx.author.display_name,
                     'timezone' : zone
                 })
-                await self.bot.memory.update_prefs(str(ctx.author.id), pref)
-                await self.bot.memory.save_prefs()
+                await self.cortex.update_preferences(ctx, pref)
+                await self.cortex.remember()
 
                 await ctx.send(f"Timezone set to {zone}.")
             except pytz.UnknownTimeZoneError:
@@ -68,12 +86,13 @@ class Preferences(commands.Cog):
 
 
     @commands.command(name='wolfie.list', aliases=['wolfie.ls'])
-    async def list_prefs(self, ctx):
-        """Display what Wolfie knows about you."""
+    async def list_preferences(self, ctx):
+        """Display what Wolfie knows about everyone."""
 
-        embed = discord.Embed(title=NAME_LIST_TITLE, color=discord.Color.dark_embed())
+        # Retrieve all preferences and format into a list of embed fields
         now = datetime.now()
-        all_prefs = await self.bot.memory.get_prefs_all()
+        embed = discord.Embed(title=NAME_LIST_TITLE, color=discord.Color.dark_embed())
+        all_prefs = await self.cortex.get_all_preferences()
         for i, value in enumerate(all_prefs.values(), start=1):
 
             tz = value.get('timezone') or 'UTC'

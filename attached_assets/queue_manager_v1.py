@@ -6,7 +6,7 @@ import discord
 import pytz
 from discord.ext import commands
 
-from core.memory import get_alias, get_alias_by_id
+from core.ganglia import get_alias, get_alias_by_id
 from utils.logger import init_logger
 
 WOLFIE_ADMIN_ROLE = os.getenv('WOLFIE_ADMIN_ROLE', 'leadership')

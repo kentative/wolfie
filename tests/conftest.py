@@ -1,14 +1,14 @@
 """
 Pytest configuration and fixtures
 """
-import pytest
+from typing import List
+from unittest.mock import AsyncMock
+
 import discord
+import pytest
 from discord.ext import commands
 
-from typing import List
-
-from core.brain import Brain
-from core.memory import Memory
+from core.cortex import Cortex
 
 
 class MockCommand:
@@ -30,8 +30,7 @@ class MockBot:
         self.user = discord.Object(id=1)
         self.command_prefix = "!"
         self.commands: List[commands.Command] = []
-        self.memory = Memory()
-        self.brain = Brain()
+        self.cortex = Cortex()
 
     async def get_prefix(self, message):
         return self.command_prefix
@@ -50,25 +49,26 @@ class MockRole:
         self.name = name
 
 class MockMember:
-    def __init__(self, mock_id=1, name="test_user", roles=None, is_admin=False):
-        self.id = mock_id
+    def __init__(self, user_id=1, display_name="display_name", name="user", roles=None, is_admin=False):
+        self.id = user_id
         self.name = name
-        self.display_name = "test_display_name"
+        self.display_name = display_name
         self.roles = roles or []
         self.guild_permissions = discord.Permissions()
         self.guild_permissions.update(manage_guild=is_admin)
         self.bot = False
 
 class MockContext:
-    def __init__(self, user_id=1, username="test_user", is_admin=False, roles=None):
+    def __init__(self, member: MockMember):
         self.bot = MockBot()
         self.guild = MockGuild()
-        self.author = MockMember(mock_id=user_id, name=username, roles=roles, is_admin=is_admin)
+        self.author = member
         self.message = None
         self.sent_messages = []
         self.suggestions_provided = False
         self.valid = False  # Added for suggestion wizard tests
         self.command = None
+        self.send = AsyncMock()
 
     async def send(self, content=None, embed=None):
         message = content if content else f"Embed: {embed.title if embed else 'No title'}"
@@ -81,24 +81,42 @@ def bot():
 
 @pytest.fixture
 def ctx_user1():
-    return MockContext(
+    return MockContext(MockMember(
         user_id=1,
-        username="user1"
-    )
+        name="user1",
+        display_name="display_name1"
+    ))
 
 @pytest.fixture
 def ctx_user2():
-    return MockContext(user_id=2, username="user2")
+    return MockContext(MockMember(
+        user_id=2,
+        name="user2",
+        display_name="display_name2"
+    ))
 
 @pytest.fixture
 def ctx_user3():
-    return MockContext(user_id=3, username="user3")
+    return MockContext(MockMember(
+        user_id=3,
+        name="user3",
+        display_name="display_name3"
+    ))
 
 @pytest.fixture
-def admin_ctx():
-    return MockContext(is_admin=True)
+def ctx_admin():
+    return MockContext(MockMember(
+        user_id=1,
+        name="user1",
+        display_name="display_name1",
+        is_admin=True
+    ))
 
 @pytest.fixture
-def leadership_ctx():
-    roles = [MockRole("leadership")]
-    return MockContext(roles=roles)
+def ctx_leadership():
+    return MockContext(MockMember(
+        user_id=1,
+        name="user1",
+        display_name="display_name1",
+        roles=[MockRole("leadership")]
+    ))
