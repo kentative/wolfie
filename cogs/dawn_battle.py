@@ -1,3 +1,20 @@
+"""
+This module implements the Battle of Dawn registration and management system. It provides
+functionality to handle class-based battle registration through Discord commands.
+
+The module supports various character classes including Sage, ShadowWalker, Monk,
+Centurion, Ranger, Guardian, Zealot, and Magistrate, with multiple aliases for each class.
+
+Constants:
+    BATTLE_NAME (str): The name of the battle system ("Battle of Dawn")
+    REGISTRATION_FILE (str): Path to the JSON file storing battle registrations
+    CLASS_NAMES (dict): Mapping of class names to their respective aliases
+
+Functions:
+    find_class(class_input: str) -> Optional[str]: Matches input string to a valid class name
+
+"""
+
 from datetime import datetime
 
 from discord.ext import commands
