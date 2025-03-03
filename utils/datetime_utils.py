@@ -9,7 +9,6 @@ from utils.logger import init_logger
 
 WOLFIE_ADMIN_ROLE = os.getenv('WOLFIE_ADMIN_ROLE', 'leadership')
 ALLOWED_ROLES = [ WOLFIE_ADMIN_ROLE.lower() ]
-USER_PREFERENCES_PATH = "data/user_preferences.json"
 
 logger = init_logger('utils')
 
@@ -57,20 +56,6 @@ def has_required_permissions():
 
     return commands.check(predicate)
 
-
-def save_user_prefs(data:dict[str, str]):
-    with open(USER_PREFERENCES_PATH, "w") as file:
-        json.dump(data, file, indent=4)
-
-
-def load_user_prefs():
-    try:
-        with open(USER_PREFERENCES_PATH, "r") as file:
-            data = json.load(file)
-            return data
-    except Exception as e:
-        logger.info(f'{e}. Creating default preferences file')
-        return {}
 
 def parse_date_input(input_date: str, user_tz: str='UTC') -> str:
     """Attempts to parse the input date, if not parsable, return value based on now"""

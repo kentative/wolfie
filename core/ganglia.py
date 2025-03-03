@@ -28,121 +28,174 @@ Responsibilities:
 """
 
 import asyncio
+import json
+import pathlib
+from abc import ABC
+from enum import Enum
+from io import TextIOWrapper
 from types import MappingProxyType
 
 from discord.ext.commands import Context
 
-from utils.datetime_utils import load_user_prefs, save_user_prefs
 from utils.logger import init_logger
+
+
+# Memory configurations
+class Memory(Enum):
+    PREFERENCES = ("preferences", "data/user_preferences.json")
+    TITLE_QUEUES = ("title_queues", "data/title_queue.json")
+    DAWN_BATTLE = ("dawn_battle", "data/dawn_battle.json")
+    WONDER_BATTLE = ("wonder_battle", "data/wonder_battle.json")
+
+    def __init__(self, type_value: str, path: str):
+        self.type = type_value
+        self.path = path
 
 logger = init_logger('Ganglia')
 
+def write_data_to_path(data: dict, path: str) -> None:
+    """ Writes the provided data to a JSON file at the specified path. """
 
-class Ganglia:
-    """The internal implementation of the memory component"""
-    def __init__(self):
-        self._user_prefs: dict = load_user_prefs()
+    pathlib.Path(path).parent.mkdir(parents=True, exist_ok=True)
 
+    # Data size in KB
+    json_str = json.dumps(data, indent=2)
+    data_size_kb = len(json_str) / 1024
+    logger.debug(f'Saving {data_size_kb:.2f} KB to {path}')
 
-    async def get_timezone(self, ctx):
-        return (self._user_prefs.get(str(ctx.author.id), {})
-                .get('timezone', 'UTC'))
-
-
-    async def get_timezone_by_id(self, user_id: str):
-        return (self._user_prefs.get(str(user_id), {})
-                .get('timezone', 'UTC'))
+    with open(path, "w", encoding="utf-8") as file:
+        file: TextIOWrapper
+        file.write(json_str)
 
 
-    async def get_alias(self, ctx):
-        return (self._user_prefs.get(str(ctx.author.id), {})
-                .get('alias', ctx.author.name))
+def load_data_from_path(path: str) -> dict:
+    """
+    Loads data from a JSON file at the specified path.
+    Returns an empty dict if the file doesn't exist.
+    """
+    try:
+        with open(path, "r") as file:
+            data = json.load(file)
+            return data
+    except Exception as e:
+        logger.warn(f'{e}. Returning empty dict')
+        return {}
 
+class BasalGanglia(ABC):
+    """Interface for all Ganglia class to supporting data persistence"""
 
-    async def get_alias_by_id(self, user_id: str, default: str):
-        return self._user_prefs.get(str(user_id), {}).get('alias', default)
+    def __init__(self, data_path: str):
+        self._data_path: str = data_path
+        self.init_data: dict = {}
+        self._data: dict = load_data_from_path(data_path)
+        self.is_modified: bool = False
 
+    def initialize(self, init_data: dict):
+        """Initialize the Ganglia instance"""
 
-    async def get_preferences(self, ctx):
-        prefs = self._user_prefs.get(str(ctx.author.id), {})
-        if not prefs:
-            logger.debug(f'create_default_preferences')
-            return await self.create_default_preferences(ctx)
-        return prefs
+        self.init_data = init_data
+        if not self._data:
+            self._data = init_data
+            self.is_modified = True
 
+    async def get(self, key: str, **kwargs):
+        """Retrieve a specific entry from memory given the context"""
+        return self._data.get(str(key), {})
 
-    async def get_preferences_by_id(self, user_id):
-        return self._user_prefs.get(str(user_id), {})
-
-
-    async def get_preferences_all(self) -> dict:
+    async def get_all(self):
         """
-        Returns a read-only copy of the entire user preferences dictionary.
+        Returns a read-only copy of all memory.
         Uses MappingProxyType for a true read-only view of the dictionary.
         """
-        return dict(MappingProxyType(self._user_prefs))
+        return dict(MappingProxyType(self._data))
+
+    async def update(self, key: str, value: dict):
+        """Update data entry"""
+        self._data[str(key)] = value
+        await self.save()
+
+    async def save(self):
+        """Save data to persistent storage"""
+        write_data_to_path(self._data, self._data_path)
+
+    async def reload(self, path: str):
+        """Reload data from persistent storage"""
+        self._data: dict = load_data_from_path(self._data_path)
+
+    async def forget(self):
+        """Reset to init data"""
+        self._data = self.init_data
 
 
-    async def create_default_preferences(self, ctx):
+class PreferencesGanglia(BasalGanglia):
+    def __init__(self):
+        super().__init__(Memory.PREFERENCES.path)
+
+    async def get(self, key: str, **kwargs):
+        prefs = self._data.get(key, {})
+        if not prefs and'ctx' in kwargs:
+            logger.debug(f'create_default_preferences')
+            ctx = kwargs['ctx']
+            return await self.create_default_prefs(ctx)
+        return prefs
+
+    async def create_default_prefs(self, ctx):
         prefs = {
             'name': ctx.author.display_name,
             'alias': ctx.author.display_name,
             'timezone': 'UTC'
         }
-        self._user_prefs[str(ctx.author.id)] = prefs
+        self._data[str(ctx.author.id)] = prefs
         logger.debug(f'created default preferences for {ctx.author.id} = {prefs}')
-        await self.save_prefs()
+        await self.save()
         return prefs
 
+class QueueGanglia(BasalGanglia):
+    def __init__(self):
+        super().__init__(Memory.TITLE_QUEUES.path)
 
-    async def save_prefs(self):
-        save_user_prefs(self._user_prefs)
+class WonderBattleGanglia(BasalGanglia):
+    def __init__(self):
+        super().__init__(Memory.WONDER_BATTLE.path)
 
-
-    async def update_prefs(self, user_id: str, new_prefs: dict):
-        self._user_prefs[str(user_id)] = new_prefs
-        await self.save_prefs()
-
+class DawnBattleGanglia(BasalGanglia):
+    def __init__(self):
+        super().__init__(Memory.DAWN_BATTLE.path)
 
 class GangliaInterface:
-    """
-    Provides direct access to the memory storage
-    """
-    def __init__(self, ganglia: Ganglia):
+    def __init__(self):
         self._lock = asyncio.Lock()
-        self._ganglia = ganglia
 
-    async def get_preferences_by_id(self, user_id: str):
-        async with self._lock:
-            logger.info(f"getting preferences by id: {user_id}")
-            return await self._ganglia.get_preferences_by_id(user_id)
+        self._memory = {
+            Memory.PREFERENCES.type: PreferencesGanglia(),
+            Memory.TITLE_QUEUES.type: QueueGanglia(),
+            Memory.WONDER_BATTLE.type: WonderBattleGanglia(),
+            Memory.DAWN_BATTLE.type: DawnBattleGanglia()
+        }
 
     async def get_preferences(self, ctx: Context):
+        return await self.get_memory(Memory.PREFERENCES, str(ctx.author.id), ctx=ctx)
+
+    async def get_all_preferences(self):
+        return await self.get_memory(Memory.PREFERENCES)
+
+    def initialize_memory(self, mem: Memory, init_data: dict):
+        self._memory[mem.type].initialize(init_data)
+
+    async def get_memory(self, mem: Memory, key: str = None, **kwargs):
+        return await self._execute(mem, 'get', key, **kwargs) if key \
+            else await self._execute(mem, 'get_all')
+
+    async def update_memory(self, mem: Memory, key: str, value :dict) -> dict:
+        await self._execute(mem, 'update', key, value)
+        self._memory[mem.type].is_modified = True
+
+    async def save_memory(self, mem: Memory):
+        return await self._execute(mem, 'save')
+
+    async def _execute(self, mem: Memory, operation: str, *args, **kwargs):
         async with self._lock:
-            logger.info(f"getting preferences by ctx: {ctx.author.id}")
-            return await self._ganglia.get_preferences(ctx)
-
-    async def get_all_preferences(self) -> dict:
-        async with self._lock:
-            logger.info(f"getting all preferences")
-            return await self._ganglia.get_preferences_all()
-
-    async def update_preferences(self, ctx: Context, preferences: dict):
-        async with self._lock:
-            logger.info(f"updating preferences {preferences}")
-            return await self._ganglia.update_prefs(str(ctx.author.id), preferences)
-
-    async def get_all_queue_entries(self, queue_name: str = "title_queue"):
-        pass
-
-    async def get_queue_entry(self, ctx: Context):
-        pass
-
-    async def update_queue_entry(self, ctx: Context):
-        pass
-
-    async def get_battle_entry(self, ctx: Context):
-        pass
-
-    async def update_battle_entry(self, ctx: Context):
-        pass
+            storage = self._memory[mem.type]
+            method = getattr(storage, operation)
+            logger.info(f"{operation} {mem.type} with args: {args}")
+            return await method(*args, **kwargs)

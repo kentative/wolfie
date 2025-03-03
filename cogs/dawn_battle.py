@@ -18,15 +18,13 @@ Functions:
 from datetime import datetime
 
 from discord.ext import commands
-from discord.ext.commands import Context, Command
-
 
 from cogs.battle.registered_battle import RegisteredBattle, DATE_DISPLAY_FORMAT
+from core.ganglia import Memory
 from utils.logger import init_logger
 
-
 BATTLE_NAME = "Battle of Dawn"
-REGISTRATION_FILE = "data/dawn_battle_registration.json"
+
 CLASS_NAMES = {
     "Sage": ['cs', 'court', 'sage', 'CourtSage'],
     "ShadowWalker": ['sw', 'shadow', 'walker', 'ShadowWalker'],
@@ -54,21 +52,8 @@ def find_class(class_input: str):
 
 class DawnBattle(RegisteredBattle):
     def __init__(self, bot):
-        super().__init__(BATTLE_NAME, REGISTRATION_FILE, bot)
-        # self.wolfie = bot.brain
+        super().__init__(BATTLE_NAME, Memory.DAWN_BATTLE, bot)
 
-
-    # @commands.command(name="dawn.test", aliases=['d.test', 'test'])
-    # async def dawn_test(self, ctx: Context, *question: str):
-    #
-    #     dawn_add: Command = ctx.bot.get_command("dawn.add")
-    #     self.wolfie.register_function(
-    #         name=dawn_add.name,
-    #         description=dawn_add.description,
-    #         parameters=dawn_add.params)
-    #
-    #     response = self.wolfie.ask(question)
-    #     await ctx.send(response)
 
     @commands.command(name="dawn.add", aliases=['d.add', 'dawn', 'd'])
     async def add(self, ctx,

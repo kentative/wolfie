@@ -6,6 +6,7 @@ import discord
 import pytz
 from discord.ext import commands
 
+from core.ganglia import Memory
 from utils.logger import init_logger
 from utils.prefs_utils import get_timezone, get_alias
 
@@ -43,25 +44,17 @@ def convert_timeslot_to_utc(day_slot: str, time_slot: str) -> str:
 
 
 class RegisteredBattle(commands.Cog):
-    def __init__(self, title: str, file: str, bot):
+    def __init__(self, title: str, memory: Memory, bot):
         self.battle_title = title
-        self.data_file = file
+        self.memory = memory
         self.cortex = bot.cortex
-        self.teams = {  # Dictionary to store team registrations
-            "d1": {"t1": {}, "t2": {}, "t3": {}},
-            "d2": {"t1": {}, "t2": {}, "t3": {}}
-        }
         self.max_team_size = 30
-        self.load_teams()
-
-    def load_teams(self):
-        if os.path.exists(self.data_file):
-            with open(self.data_file, "r") as f:
-                self.teams.update(json.load(f))
-
-    def save_teams(self):
-        with open(self.data_file, "w") as f:
-            json.dump(self.teams, f, indent=4)
+        self.cortex.initialize_memory(
+            Memory.TITLE_QUEUES, {
+                # Dictionary to store team registrations
+                "d1": {"t1": {}, "t2": {}, "t3": {}},
+                "d2": {"t1": {}, "t2": {}, "t3": {}}
+            })
 
     async def register(self, ctx,
                        day: str = commands.parameter(description="use d1 or d2"),
@@ -71,11 +64,12 @@ class RegisteredBattle(commands.Cog):
         day = day.lower()
         time = time.lower()
 
-        if day not in self.teams or time not in self.teams[day]:
+        teams = await self.cortex.get_memory(self.memory)
+        if day not in teams or time not in teams[day]:
             await ctx.send("Invalid day or time slot. Use d1/d2 and t1/t2/t3.")
             return
 
-        team: dict = self.teams[day][time]
+        team: dict = teams[day][time]
         user_id = str(ctx.author.id)  # Ensure user_id is stored as a string for JSON compatibility
 
         if user_id in team:
@@ -90,7 +84,7 @@ class RegisteredBattle(commands.Cog):
             # Create new entry
             team[user_id] = {"context": context}
 
-        self.save_teams()
+        await self.cortex.remember()
 
         # User data
         user_prefs = await self.cortex.get_preferences(ctx)
@@ -108,11 +102,12 @@ class RegisteredBattle(commands.Cog):
         day = day.lower()
         time = time.lower()
 
-        if day not in self.teams or time not in self.teams[day]:
+        teams = await self.cortex.get_memory(self.memory)
+        if day not in teams or time not in teams[day]:
             await ctx.send("Invalid day or time slot. Use d1/d2 and t1/t2/t3.")
             return
 
-        team: dict = self.teams[day][time]
+        team: dict = teams[day][time]
         user_id = str(ctx.author.id)
 
         # User data
@@ -121,7 +116,7 @@ class RegisteredBattle(commands.Cog):
 
         if user_id in team:
             del team[user_id]  # Remove the user from the time slot
-            self.save_teams()
+            await self.cortex.remember()
             logger.info("Successfully removed.")
             await ctx.send(f"{user_alias} has been removed from {day.upper()} {time.upper()}.")
         else:
@@ -144,7 +139,8 @@ class RegisteredBattle(commands.Cog):
 
         all_prefs = await self.cortex.get_all_preferences()
         embed = discord.Embed(title=self.battle_title, color=discord.Color.dark_gold())
-        for day, slots in self.teams.items():
+        teams = await self.cortex.get_memory(self.memory)
+        for day, slots in teams.items():
             for time, members in slots.items():
                 logger.info(f"Listing entries for {day} {slots}")
                 utc_time = TIME_MAPPING[time]

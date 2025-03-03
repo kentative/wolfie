@@ -1,16 +1,16 @@
 from discord.ext import commands
 
 from cogs.battle.registered_battle import RegisteredBattle
+from core.ganglia import Memory
 from utils.logger import init_logger
 
 BATTLE_NAME = "Wonder Contest"
-REGISTRATION_FILE = "data/wonder_conquest_teams.json"
 
 logger = init_logger('WonderContest')
 
 class WonderBattle(RegisteredBattle):
     def __init__(self, bot):
-        super().__init__(BATTLE_NAME, REGISTRATION_FILE, bot)
+        super().__init__(BATTLE_NAME, Memory.WONDER_BATTLE, bot)
 
     @commands.command(name="wonder.add", aliases=['w.add', 'wonder'])
     async def add(self, ctx,

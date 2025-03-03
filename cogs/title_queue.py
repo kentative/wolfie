@@ -1,5 +1,4 @@
 import json
-import os
 from datetime import datetime, timedelta
 
 import discord
@@ -7,13 +6,13 @@ import pytz
 from dateutil import parser
 from discord.ext import commands
 
+from core.ganglia import Memory
 from tests.conftest import MockContext
 from utils.datetime_utils import has_required_permissions, parse_datetime, parse_date_input, parse_time_input, \
     read_iso_datetime
 from utils.logger import init_logger
-from utils.prefs_utils import get_timezone, get_alias, get_alias_by_id
+from utils.prefs_utils import get_timezone, get_alias, get_alias_by_id, get_timezone_by_id
 
-QUEUE_FILE = "data/queue_data.json"
 QUEUES = {
     'tribune': "🏆 Tribune (Healing) 🏆",
     'elder': "🏆 Elder (Gathering) 🏆",
@@ -30,24 +29,16 @@ logger = init_logger('TitleQueue')
 
 class TitleQueue(commands.Cog):
     def __init__(self, bot):
-        self.queues = {queue: {"entries": [], "cursor": 0} for queue in QUEUES}
         self.cortex = bot.cortex
-        self.load_queues()
+        self.cortex.initialize_memory(
+            Memory.TITLE_QUEUES,
+            {queue: {"entries": [], "cursor": 0} for queue in QUEUES})
 
-    def load_queues(self):
-        if os.path.exists(QUEUE_FILE):
-            with open(QUEUE_FILE, "r") as f:
-                self.queues.update(json.load(f))
-
-    def save_queues(self):
-        with open(QUEUE_FILE, "w") as f:
-            json.dump(self.queues, f, indent=4)
-
-    def find_next_available_slot(self, queue_name:str, user_tz:str):
+    @staticmethod
+    async def find_next_available_slot(user_tz:str, queue: dict):
         """ find the next time slot based on current entry in the queue"""
 
         # get current entry
-        queue = self.queues[queue_name]
         queue_entries = queue['entries']
         cursor = queue['cursor']
         logger.info(f"queue_entries: {json.dumps(queue_entries, indent=2)}, cursor: {cursor}")
@@ -94,9 +85,10 @@ class TitleQueue(commands.Cog):
         user_tz = get_timezone(user_prefs)
         now = datetime.now(pytz.timezone(user_tz))
         now = now.replace(minute=0, second=0, microsecond=0)
+        queue = await self.cortex.get_memory(Memory.TITLE_QUEUES, queue_name)
 
         if not start_date and not start_time:
-            dt = self.find_next_available_slot(queue_name, user_tz)
+            dt = await self.find_next_available_slot(user_tz, queue)
             logger.info(f"start date and time not specified, using next available slot: {dt}")
             if not dt:
                 await ctx.send("No available slots in the next 3 days.")
@@ -128,7 +120,7 @@ class TitleQueue(commands.Cog):
             await ctx.send("Invalid start time. Please specify the hour in the future.")
             return
 
-        entries = self.queues[queue_name]["entries"]
+        entries = queue["entries"]
         if any(e["user_id"] == user_id and abs(dt - datetime.fromisoformat(e["time"])) < timedelta(days=1) for e in
                entries):
             logger.warn("Only one entry per day")
@@ -157,7 +149,8 @@ class TitleQueue(commands.Cog):
          })
 
         entries.sort(key=lambda e: parser.isoparse(e["time"]))
-        self.save_queues()
+        await self.cortex.remember()
+
         logger.info(f"Successfully added {ctx.author.id} to queue")
         user_alias = get_alias(user_prefs)
         await ctx.send(f"Added {user_alias} to {QUEUES[queue_name]} queue at {dt.astimezone(pytz.UTC).strftime('%Y-%m-%d %H:%M UTC')}.")
@@ -187,7 +180,7 @@ class TitleQueue(commands.Cog):
 
         user_id = str(ctx.author.id)
         user_tz = get_timezone(user_prefs)
-        queue =  self.queues[queue_name]
+        queue =  await self.cortex.get_memory(Memory.TITLE_QUEUES, queue_name)
         cursor = int(queue['cursor'])
         entries = queue["entries"]
 
@@ -212,7 +205,7 @@ class TitleQueue(commands.Cog):
                 queue['cursor'] = cursor -1
 
             entries.remove(entry_to_remove)
-            self.save_queues()
+            await self.cortex.remember()
             user_alias = get_alias(user_prefs)
             await ctx.send(f"Removed {user_alias} from {QUEUES[queue_name]} queue.")
 
@@ -238,7 +231,7 @@ class TitleQueue(commands.Cog):
         if count < 1:
             await ctx.send(f"Count must be at least 1.")
 
-        queue = self.queues[queue_name]
+        queue = await self.cortex.get_memory(Memory.TITLE_QUEUES, queue_name)
         queue_size = len(queue["entries"])
         cursor = queue["cursor"]
         if count + cursor > len(queue):
@@ -249,7 +242,7 @@ class TitleQueue(commands.Cog):
         logger.info(f"Advancing queue. cursor: {cursor} count: {count} size: {queue_size}")
         if queue["cursor"] < queue_size:
             queue["cursor"] += count
-            self.save_queues()
+            await self.cortex.remember()
             entry = queue["entries"][queue["cursor"] -1]
             await ctx.send(f"<@{entry.get('user_id')}>, your title is available!")
 
@@ -283,7 +276,7 @@ class TitleQueue(commands.Cog):
         embed = discord.Embed(title="👑 --= IMPERIAL TITLES =-- 👑", color=discord.Color.dark_gold())
         embed.add_field(name="", value="", inline=False)
 
-        all_prefs = self.cortex.get_all_preferences()
+        all_prefs = await self.cortex.get_all_preferences()
         for queue_name in queue_names:
             if queue_name.lower() not in QUEUES:
                 continue
@@ -306,7 +299,7 @@ class TitleQueue(commands.Cog):
                 emoji = EMOJIS["past"] if i < queue["cursor"] \
                     else (EMOJIS["current"] if i == queue["cursor"] else EMOJIS["waiting"])
 
-                entry_tz =  pytz.timezone(await self.memory.get_timezone_by_id(entry_id))
+                entry_tz =  get_timezone_by_id(entry_id, all_prefs)
                 dt = datetime.fromisoformat(entry["time"])
 
                 description = f"{dt.astimezone(entry_tz).strftime('%m-%d %H:%M')} {entry_tz}" \

@@ -5,6 +5,8 @@ from dateutil import parser
 from dotenv import load_dotenv
 from freezegun import freeze_time
 
+from core.ganglia import Memory
+
 load_dotenv()
 
 from cogs.title_queue import TitleQueue
@@ -34,18 +36,18 @@ class TestTitleQueue:
     async def test_single_queue(self, title_queue, ctx_user1, ctx_user2, ctx_user3):
         """Test joining a queue"""
 
-        queue_names = QUEUES.keys()
         users = [ctx_user1, ctx_user2, ctx_user3]
 
         # clear the queues
-        title_queue.queues = {queue: {"entries": [], "cursor": 0} for queue in QUEUES}
+        await title_queue.cortex.forget(Memory.TITLE_QUEUES)
 
         for ctx in users:
             await title_queue.queue_add.__call__(title_queue, ctx, "sage", None, None)
 
-        total_entries = count_queue_size(title_queue.queues)
+        queues = await title_queue.cortex.get_memory(Memory.TITLE_QUEUES)
+        total_entries = count_queue_size(queues)
         assert total_entries == NUM_USERS
-        validate_entries(title_queue.queues, "per_hour")
+        validate_entries(queues, "per_hour")
 
     @pytest.mark.asyncio
     async def test_queue_join(self, title_queue, ctx_user1, ctx_user2, ctx_user3):
@@ -55,15 +57,16 @@ class TestTitleQueue:
         users = [ctx_user1, ctx_user2, ctx_user3]
 
         # clear the queues
-        title_queue.queues = {queue: {"entries": [], "cursor": 0} for queue in QUEUES}
+        await title_queue.cortex.forget(Memory.TITLE_QUEUES)
 
         for name in queue_names:
             for ctx in users:
                 await title_queue.queue_add.__call__(title_queue, ctx, name, None, None)
 
-        total_entries = count_queue_size(title_queue.queues)
+        queues = await title_queue.cortex.get_memory(Memory.TITLE_QUEUES)
+        total_entries = count_queue_size(queues)
         assert total_entries == len(queue_names) * NUM_USERS
-        validate_entries(title_queue.queues, "per_hour")
+        validate_entries(queues, "per_hour")
 
     @pytest.mark.asyncio
     async def test_queue_join_date(self, title_queue, ctx_user1, ctx_user2, ctx_user3):
@@ -78,15 +81,16 @@ class TestTitleQueue:
              ]
 
             # clear the queues
-            title_queue.queues = {queue: {"entries": [], "cursor": 0} for queue in QUEUES}
+            await title_queue.cortex.forget(Memory.TITLE_QUEUES)
 
             for ctx in users:
                 for date in dates:
                     await title_queue.queue_add.__call__(title_queue, ctx, "sage", date, None)
 
-            total_entries = count_queue_size(title_queue.queues)
+            queues = await title_queue.cortex.get_memory(Memory.TITLE_QUEUES)
+            total_entries = count_queue_size(queues)
             assert total_entries == 2
-            validate_entries(title_queue.queues)
+            validate_entries(queues)
 
     @pytest.mark.asyncio
     async def test_queue_join_time(self, title_queue, ctx_user1, ctx_user2, ctx_user3):
@@ -102,15 +106,17 @@ class TestTitleQueue:
              ]
 
             # clear the queues
-            title_queue.queues = {queue: {"entries": [], "cursor": 0} for queue in QUEUES}
+            await title_queue.cortex.forget(Memory.TITLE_QUEUES)
 
             for ctx in users:
                 for time in times:
                     await title_queue.queue_add.__call__(title_queue, ctx, "sage", time, None)
 
-            total_entries = count_queue_size(title_queue.queues)
+            queues = await title_queue.cortex.get_memory(Memory.TITLE_QUEUES)
+            total_entries = count_queue_size(queues)
             assert total_entries == 1
-            validate_entries(title_queue.queues)
+            validate_entries(queues)
+
 
     @pytest.mark.asyncio
     @freeze_time("2025-02-21 21:00:00-08:00")
@@ -132,16 +138,18 @@ class TestTitleQueue:
          ]
 
         # clear the queues
-        title_queue.queues = {queue: {"entries": [], "cursor": 0} for queue in QUEUES}
+        await title_queue.cortex.forget(Memory.TITLE_QUEUES)
 
         for ctx in users:
             for date in dates:
                 for time in times:
                     await title_queue.queue_add.__call__(title_queue, ctx, "sage", date, time)
 
-        total_entries = count_queue_size(title_queue.queues)
+
+        queues = await title_queue.cortex.get_memory(Memory.TITLE_QUEUES)
+        total_entries = count_queue_size(queues)
         assert total_entries == 3
-        validate_entries(title_queue.queues)
+        validate_entries(queues)
 
 
 def count_queue_size(data):

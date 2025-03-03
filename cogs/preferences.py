@@ -5,6 +5,7 @@ import pytz
 from discord.ext import commands
 
 from core.cortex import Cortex
+from core.ganglia import Memory
 from utils.datetime_utils import DISPLAY_DATE_TIME_FORMAT
 from utils.logger import init_logger
 
@@ -39,6 +40,7 @@ class Preferences(commands.Cog):
             return
 
         # Prepare the preference data
+        user_id = str(ctx.author.id)
         pref = await self.cortex.get_preferences(ctx)
         new_pref = {
             'name': ctx.author.display_name,
@@ -49,7 +51,7 @@ class Preferences(commands.Cog):
         # Perform the update
         if any(pref.get(k) != v for k, v in new_pref.items()):
             pref.update(new_pref)
-            await self.cortex.update_preferences(ctx, pref)
+            await self.cortex.update_memory(Memory.PREFERENCES, user_id, pref)
             embed = discord.Embed(title=NAME_LIST_TITLE,
                               color=discord.Color.dark_embed())
             embed.add_field(name=f"{ctx.author.name}", value=f"is known to wolfie as {alias}", inline=False)
@@ -77,7 +79,7 @@ class Preferences(commands.Cog):
                     'name': ctx.author.display_name,
                     'timezone' : zone
                 })
-                await self.cortex.update_preferences(ctx, pref)
+                await self.cortex.update_memory(Memory.PREFERENCES, str(ctx.author.id), pref)
                 await self.cortex.remember()
 
                 await ctx.send(f"Timezone set to {zone}.")
@@ -92,7 +94,7 @@ class Preferences(commands.Cog):
         # Retrieve all preferences and format into a list of embed fields
         now = datetime.now()
         embed = discord.Embed(title=NAME_LIST_TITLE, color=discord.Color.dark_embed())
-        all_prefs = await self.cortex.get_all_preferences()
+        all_prefs = await self.cortex.get_memory(Memory.PREFERENCES)
         for i, value in enumerate(all_prefs.values(), start=1):
 
             tz = value.get('timezone') or 'UTC'
@@ -107,6 +109,7 @@ class Preferences(commands.Cog):
                 value=details, inline=False)
 
         await ctx.send(embed=embed)
+
 
 async def setup(bot):
     await bot.add_cog(Preferences(bot))

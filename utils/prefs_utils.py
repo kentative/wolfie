@@ -9,3 +9,6 @@ def get_alias_by_id(user_id: str, all_prefs: dict):
     prefs = all_prefs.get(str(user_id), {})
     return get_alias(prefs)
 
+def get_timezone_by_id(user_id: str, all_prefs: dict):
+    prefs = all_prefs.get(str(user_id), {})
+    return get_timezone(prefs)
