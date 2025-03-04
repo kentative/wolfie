@@ -24,7 +24,7 @@ intents.message_content = True
 intents.members = True
 
 bot = Bot(command_prefix=PREFIX, intents=intents)
-bot.cortext = Cortex()
+bot.cortex = Cortex()
 
 @bot.event
 async def on_ready():
