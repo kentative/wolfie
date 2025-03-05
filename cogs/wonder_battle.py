@@ -42,8 +42,6 @@ class WonderBattle(RegisteredBattle):
     async def wonder_list(self, ctx, options:str = commands.parameter(description="supported options: 'all'", default="")):
 
         """List current registration information in UTC."""
-        await self.list_registration(ctx, options)
-
         await self.list_registration(
             ctx,
             options,
@@ -52,7 +50,7 @@ class WonderBattle(RegisteredBattle):
     @staticmethod
     def _format_member(prefs: dict, entry: dict, user_datetime: datetime):
         primary = EMOJIS["primary"] if entry.get('primary', False) else EMOJIS["secondary"]
-        return f'[**{primary}**] {prefs.get("alias", "Unknown")} ({user_datetime.strftime(DATE_DISPLAY_FORMAT)})'
+        return f'{primary} {prefs.get("alias", "Unknown")} ({user_datetime.strftime(DATE_DISPLAY_FORMAT)})'
 
 
 # Add the cog to the bot
