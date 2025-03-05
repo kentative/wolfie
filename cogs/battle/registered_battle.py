@@ -162,12 +162,12 @@ class RegisteredBattle(commands.Cog):
                     user_datetime = convert_utc_to_local(prefs.get('timezone', 'UTC'), f'{utc_date} {utc_time}')
 
                     # Apply lambda transformation
-                    member_details.append(format_member_details(prefs, entry, user_datetime))
+                    member_details.append(format_member_details(prefs, entry, user_datetime) + "\n")
 
                 # only display for non-empty list
                 if members or "all" in options:
                     embed.add_field(name=f"Day {day[1]} Slot {time[1]} ({utc_date} {utc_time})",
-                                    value=f"{chr(10).join(member_details) if members else 'No registrations'}",
+                                    value=f"{''.join(member_details) if members else 'No registrations'}",
                                     inline=False)
 
         await ctx.send(embed=embed)
