@@ -49,8 +49,9 @@ class WonderBattle(RegisteredBattle):
 
     @staticmethod
     def _format_member(prefs: dict, entry: dict, user_datetime: datetime):
-        primary = EMOJIS["primary"] if entry.get('primary', False) else EMOJIS["secondary"]
-        return f'{primary} {prefs.get("alias", "Unknown")} ({user_datetime.strftime(DATE_DISPLAY_FORMAT)})'
+        is_primary = entry.get('context', {}).get('primary', False)
+        icon = EMOJIS["primary"] if is_primary else EMOJIS["secondary"]
+        return f'{icon} {prefs.get("alias", "Unknown")} ({user_datetime.strftime(DATE_DISPLAY_FORMAT)})'
 
 
 # Add the cog to the bot
