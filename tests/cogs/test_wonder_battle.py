@@ -54,7 +54,7 @@ class TestWonderBattle:
 
 
     @pytest.mark.asyncio
-    async def test_list(self, battle, ctx_user1, ctx_user3):
+    async def test_list(self, battle, ctx_user1, ctx_user2, ctx_user3):
 
         await battle.cortex.forget(Memory.WONDER_BATTLE)
 
@@ -62,6 +62,8 @@ class TestWonderBattle:
         for d in ["d1", "d2"]:
             for t in ['t1', 't2', 't3']:
                 await battle.add(battle, ctx_user1, d, t)
+                await battle.add(battle, ctx_user2, d, t)
+                await battle.add(battle, ctx_user3, d, t)
 
         # list user preferences
         await battle.wonder_list(battle, ctx_user1)
