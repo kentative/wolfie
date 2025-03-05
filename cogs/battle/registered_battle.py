@@ -1,5 +1,3 @@
-import json
-import os
 from datetime import datetime, timedelta
 
 import discord
@@ -50,7 +48,7 @@ class RegisteredBattle(commands.Cog):
         self.cortex = bot.cortex
         self.max_team_size = 30
         self.cortex.initialize_memory(
-            Memory.TITLE_QUEUES, {
+            memory, {
                 # Dictionary to store team registrations
                 "d1": {"t1": {}, "t2": {}, "t3": {}},
                 "d2": {"t1": {}, "t2": {}, "t3": {}}
@@ -64,25 +62,36 @@ class RegisteredBattle(commands.Cog):
         day = day.lower()
         time = time.lower()
 
-        teams = await self.cortex.get_memory(self.memory)
-        if day not in teams or time not in teams[day]:
+        day_slots = await self.cortex.get_memory(self.memory)
+        if day not in day_slots or time not in day_slots[day]:
             await ctx.send("Invalid day or time slot. Use d1/d2 and t1/t2/t3.")
             return
 
-        team: dict = teams[day][time]
+        time_slot: dict = day_slots[day][time]
         user_id = str(ctx.author.id)  # Ensure user_id is stored as a string for JSON compatibility
 
-        if user_id in team:
+        # If registering as primary, remove primary flag from all other slots
+        if context.get('primary', False):
+            for d in day_slots:
+                for t in day_slots[d]:
+                    if user_id in day_slots[d][t] and day_slots[d][t][user_id]['context'].get('primary', False):
+                        if d == day and t == time:
+                            continue  # Skip current slot
+                        # Remove primary flag from other slot
+                        day_slots[d][t][user_id]['context']['primary'] = False
+                        await ctx.send(f"Removed primary {d} {t} slot")
+
+        if user_id in time_slot:
             await ctx.send("Updating your entry for this slot!")
-            team[user_id]["context"].update(context)  # Update existing entry instead of overwriting
+            time_slot[user_id]["context"].update(context)  # Update existing entry instead of overwriting
 
         else:
-            if len(team) >= self.max_team_size:
+            if len(time_slot) >= self.max_team_size:
                 await ctx.send(f"This time slot is full ({self.max_team_size} players max). Try another slot.")
                 return
 
             # Create new entry
-            team[user_id] = {"context": context}
+            time_slot[user_id] = {"context": context}
 
         await self.cortex.remember()
 

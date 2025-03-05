@@ -90,8 +90,10 @@ class DawnBattle(RegisteredBattle):
     async def list(self, ctx, options:str = commands.parameter(description="supported options: 'all'", default="")):
         """List current registration information in UTC."""
 
-        await self.list_registration(ctx, options, lambda prefs, entry, user_datetime: self._format_member(prefs, entry,
-                                                                                                           user_datetime))
+        await self.list_registration(
+            ctx,
+            options,
+            lambda prefs, entry, user_datetime: self._format_member(prefs, entry, user_datetime))
 
     @staticmethod
     def _format_member(prefs: dict, entry: dict, user_datetime: datetime):
