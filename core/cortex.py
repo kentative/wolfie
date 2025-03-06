@@ -11,9 +11,10 @@ class Cortex(GangliaInterface):
         super().__init__()
         self._lock = asyncio.Lock()
 
-    async def remember(self):
+    async def remember(self, memory: Memory = None):
         for memory_name, memory_class in self._memory.items():
-            if memory_class.is_modified:
+            if memory_class.is_modified or memory_name == memory.type:
+                logger.info(f"remembering: {memory_name}")
                 await memory_class.save()
 
     async def forget(self, memory: Memory):

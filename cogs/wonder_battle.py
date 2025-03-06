@@ -20,7 +20,7 @@ class WonderBattle(RegisteredBattle):
     async def add(self, ctx,
                      day: str=commands.parameter(description="use d1 or d2"),
                      time: str=commands.parameter(description="use t1, t2 or t3"),
-                     options: str=commands.parameter(description="options -p: primary, -s: secondary (default)", default=None)):
+                     options: str=commands.parameter(description="-p: primary, -s: secondary (default)", default=None)):
         """Register user for a specific day and time slot."""
         if options == '-p' or options == '-s':
             await self.register(ctx, day, time, **{"primary" : options == '-p'})

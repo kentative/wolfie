@@ -18,6 +18,7 @@ EMOJIS = {"day": "☀️", "night": "💤"}
 class Preferences(commands.Cog):
     def __init__(self, bot):
         self.cortex: Cortex = bot.cortex
+        self.memory = Memory.PREFERENCES
 
     @commands.command(name='wolfie.set', aliases=['wolfie.set.prefs', 'wolfie.prefs', 'wolfie.me'])
     async def set_name(self, ctx,
@@ -55,7 +56,7 @@ class Preferences(commands.Cog):
             embed = discord.Embed(title=NAME_LIST_TITLE,
                               color=discord.Color.dark_embed())
             embed.add_field(name=f"{ctx.author.name}", value=f"is known to wolfie as {alias}", inline=False)
-            await self.cortex.remember()
+            await self.cortex.remember(self.memory)
         else:
             logger.info("preferences not changed")
             await ctx.send("Wolfie already knows your name")
@@ -80,7 +81,7 @@ class Preferences(commands.Cog):
                     'timezone' : zone
                 })
                 await self.cortex.update_memory(Memory.PREFERENCES, str(ctx.author.id), pref)
-                await self.cortex.remember()
+                await self.cortex.remember(self.memory)
 
                 await ctx.send(f"Timezone set to {zone}.")
             except pytz.UnknownTimeZoneError:

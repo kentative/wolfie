@@ -30,8 +30,9 @@ logger = init_logger('TitleQueue')
 class TitleQueue(commands.Cog):
     def __init__(self, bot):
         self.cortex = bot.cortex
+        self.memory = Memory.TITLE_QUEUES
         self.cortex.initialize_memory(
-            Memory.TITLE_QUEUES,
+            self.memory,
             {queue: {"entries": [], "cursor": 0} for queue in QUEUES})
 
     @staticmethod
@@ -149,7 +150,7 @@ class TitleQueue(commands.Cog):
          })
 
         entries.sort(key=lambda e: parser.isoparse(e["time"]))
-        await self.cortex.remember()
+        await self.cortex.remember(self.memory)
 
         logger.info(f"Successfully added {ctx.author.id} to queue")
         user_alias = get_alias(user_prefs)
@@ -205,7 +206,7 @@ class TitleQueue(commands.Cog):
                 queue['cursor'] = cursor -1
 
             entries.remove(entry_to_remove)
-            await self.cortex.remember()
+            await self.cortex.remember(self.memory)
             user_alias = get_alias(user_prefs)
             await ctx.send(f"Removed {user_alias} from {QUEUES[queue_name]} queue.")
 
@@ -242,7 +243,7 @@ class TitleQueue(commands.Cog):
         logger.info(f"Advancing queue. cursor: {cursor} count: {count} size: {queue_size}")
         if queue["cursor"] < queue_size:
             queue["cursor"] += count
-            await self.cortex.remember()
+            await self.cortex.remember(self.memory)
             entry = queue["entries"][queue["cursor"] -1]
             await ctx.send(f"<@{entry.get('user_id')}>, your title is available!")
 

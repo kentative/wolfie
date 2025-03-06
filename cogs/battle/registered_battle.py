@@ -10,7 +10,7 @@ from utils.prefs_utils import get_timezone, get_alias
 
 DATE_DISPLAY_FORMAT = '%m-%d %H:%M %Z'
 TIME_MAPPING = {"t1": "01:00 UTC", "t2": "11:00 UTC", "t3": "19:00 UTC"}
-
+TIME_ICON = {"t1": "🕐", "t2": "🕚", "t3": "🕖"}
 logger = init_logger('RegisteredBattle')
 
 def get_weekend_dates(user_tz):
@@ -39,6 +39,63 @@ def convert_timeslot_to_utc(day_slot: str, time_slot: str) -> str:
     d1_date, d2_date = get_weekend_dates('UTC')
     date_mapping = {"d1": d1_date, "d2": d2_date}
     return f'{date_mapping.get(day_slot)} {TIME_MAPPING.get(time_slot)}'
+
+
+async def parse_slot_option(ctx, options):
+    try:
+        # Initialize return values as None
+        filtered_day = None
+        filtered_time = None
+
+        option_parts = options[1:].lower()  # Remove the leading -
+
+        # Handle day-only format (-d#)
+        if option_parts.startswith('d') and len(option_parts) == 2:
+            day_num = int(option_parts[1])
+            if day_num in [1, 2]:
+                filtered_day = f"d{day_num}"
+            else:
+                await ctx.send("Invalid day number. Use 1 or 2.")
+                return
+
+        # Handle time-only format (-t#)
+        elif option_parts.startswith('t') and len(option_parts) == 2:
+            time_num = int(option_parts[1])
+            if time_num in [1, 2, 3]:
+                filtered_time = str(time_num)
+            else:
+                await ctx.send("Invalid time slot number.")
+                return
+
+        # Handle combined format (-d#t#)
+        elif len(option_parts) == 4 and option_parts[0] == 'd' and option_parts[2] == 't':
+            day_num = int(option_parts[1])
+            time_num = int(option_parts[3])
+
+            # Validate day number
+            if day_num in [1, 2]:
+                filtered_day = f"d{day_num}"
+            else:
+                await ctx.send("Invalid day number. Use 1 or 2.")
+                return
+
+            # Validate time slot
+            if time_num in [1, 2, 3]:
+                filtered_time = str(time_num)
+            else:
+                await ctx.send("Invalid time slot number.")
+                return
+
+        else:
+            await ctx.send("Invalid format. Use -d# or -t# or -d#t# (e.g., -d1, -t2, or -d1t2)")
+            return
+
+    except (IndexError, ValueError):
+        await ctx.send("Invalid format. Use -d# or -t# or -d#t# (e.g., -d1, -t2, or -d1t2)")
+        return
+
+    logger.info(f"Filtering for {filtered_day} {filtered_time}")
+    return filtered_day, filtered_time
 
 
 class RegisteredBattle(commands.Cog):
@@ -93,7 +150,7 @@ class RegisteredBattle(commands.Cog):
             # Create new entry
             time_slot[user_id] = {"context": context}
 
-        await self.cortex.remember()
+        await self.cortex.remember(self.memory)
 
         # User data
         user_prefs = await self.cortex.get_preferences(ctx)
@@ -125,7 +182,7 @@ class RegisteredBattle(commands.Cog):
 
         if user_id in team:
             del team[user_id]  # Remove the user from the time slot
-            await self.cortex.remember()
+            await self.cortex.remember(self.memory)
             logger.info("Successfully removed.")
             await ctx.send(f"{user_alias} has been removed from {day.upper()} {time.upper()}.")
         else:
@@ -139,7 +196,7 @@ class RegisteredBattle(commands.Cog):
 
 
     async def list_registration(self, ctx,
-                                options: str = commands.parameter(description="supported options: 'all'", default=""),
+                                options: str = commands.parameter(description="-a 'all slots', -d#t# 'd and time slot'", default="non-empty"),
                                 format_member_details: callable = format_member):
 
         """List current registration information in UTC."""
@@ -149,8 +206,23 @@ class RegisteredBattle(commands.Cog):
         all_prefs = await self.cortex.get_all_preferences()
         embed = discord.Embed(title=self.battle_title, color=discord.Color.dark_gold())
         teams = await self.cortex.get_memory(self.memory)
+
+        # Parse -d#t# option
+        filtered_day = None
+        filtered_time = None
+        if isinstance(options, str) and options.startswith("-d"):
+            filtered_day, filtered_time = await parse_slot_option(ctx, options)
+
         for day, slots in teams.items():
+            # Skip if filtered_day is set and doesn't match current day
+            if filtered_day and day != filtered_day:
+                continue
+
             for time, members in slots.items():
+                # Skip if filtered_time is set and doesn't match current time
+                if filtered_time and time != filtered_time:
+                    continue
+
                 logger.info(f"Listing entries for {day} {slots}")
                 utc_time = TIME_MAPPING[time]
                 utc_date = day_mapping[day]
@@ -166,7 +238,7 @@ class RegisteredBattle(commands.Cog):
 
                 # only display for non-empty list
                 if members or "all" in options:
-                    embed.add_field(name=f"🗓️Day {day[1]} Slot {time[1]} ({utc_date} {utc_time})",
+                    embed.add_field(name=f"🗓️ Day {day[1]} Slot {time[1]} ({utc_date} {utc_time})",
                                     value=f"{''.join(member_details) if members else 'No registrations'}",
                                     inline=False)
 

@@ -116,6 +116,7 @@ class BasalGanglia(ABC):
 
     async def save(self):
         """Save data to persistent storage"""
+        logger.debug(f'Saving data to {self._data_path}')
         write_data_to_path(self._data, self._data_path)
 
     async def reload(self, path: str):
