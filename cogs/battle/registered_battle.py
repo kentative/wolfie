@@ -11,6 +11,8 @@ from utils.prefs_utils import get_timezone, get_alias
 DATE_DISPLAY_FORMAT = '%m-%d %H:%M %Z'
 TIME_MAPPING = {"t1": "01:00 UTC", "t2": "11:00 UTC", "t3": "19:00 UTC"}
 TIME_ICON = {"t1": "🕐", "t2": "🕚", "t3": "🕖"}
+PRIMARY_ICON = {"primary": "⚔️️", "secondary": ""}
+
 logger = init_logger('RegisteredBattle')
 
 def get_weekend_dates(user_tz):
@@ -117,7 +119,8 @@ class RegisteredBattle(commands.Cog):
                        **context):
         """Register user for a specific day and time slot."""
         day = day.lower()
-        time = time.lower()
+        time = 't' + time[1:].lower()  # allow slot and time
+
 
         day_slots = await self.cortex.get_memory(self.memory)
         if day not in day_slots or time not in day_slots[day]:
@@ -166,7 +169,7 @@ class RegisteredBattle(commands.Cog):
                      time: str = commands.parameter(description="use t1, t2 or t3")):
         """Remove user from a specific day and time slot."""
         day = day.lower()
-        time = time.lower()
+        time = 't' + time[1:].lower()  # allow slot and time
 
         teams = await self.cortex.get_memory(self.memory)
         if day not in teams or time not in teams[day]:
@@ -196,7 +199,9 @@ class RegisteredBattle(commands.Cog):
 
 
     async def list_registration(self, ctx,
-                                options: str = commands.parameter(description="-a 'all slots', -d#t# 'd and time slot'", default="non-empty"),
+                                options: str = commands.parameter(
+                                    description="a 'all slots', d#t# 'day and time slot'",
+                                    default="non-empty"),
                                 format_member_details: callable = format_member):
 
         """List current registration information in UTC."""
@@ -210,7 +215,7 @@ class RegisteredBattle(commands.Cog):
         # Parse -d#t# option
         filtered_day = None
         filtered_time = None
-        if isinstance(options, str) and options.startswith("-d"):
+        if isinstance(options, str) and options.startswith("d"):
             filtered_day, filtered_time = await parse_slot_option(ctx, options)
 
         for day, slots in teams.items():
@@ -237,7 +242,7 @@ class RegisteredBattle(commands.Cog):
                     member_details.append(format_member_details(prefs, entry, user_datetime) + "\n")
 
                 # only display for non-empty list
-                if members or "all" in options:
+                if members or "all" in options or "a" in options:
                     embed.add_field(name=f"🗓️ Day {day[1]} Slot {time[1]} ({utc_date} {utc_time})",
                                     value=f"{''.join(member_details) if members else 'No registrations'}",
                                     inline=False)

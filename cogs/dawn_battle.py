@@ -19,7 +19,7 @@ from datetime import datetime
 
 from discord.ext import commands
 
-from cogs.battle.registered_battle import RegisteredBattle, DATE_DISPLAY_FORMAT
+from cogs.battle.registered_battle import RegisteredBattle, DATE_DISPLAY_FORMAT, PRIMARY_ICON
 from core.ganglia import Memory
 from utils.logger import init_logger
 
@@ -59,7 +59,8 @@ class DawnBattle(RegisteredBattle):
     async def add(self, ctx,
                      day: str=commands.parameter(description="use d1 or d2"),
                      time: str=commands.parameter(description="use t1, t2 or t3"),
-                     battle_class: str = commands.parameter(description="one of 'CourtSage, ShadowWalker, Monk, Centurion, Ranger, Guardian, Zealot, Magistrate'")):
+                     battle_class: str = commands.parameter(description="one of 'CourtSage, ShadowWalker, Monk, Centurion, Ranger, Guardian, Zealot, Magistrate'"),
+                     options: str = commands.parameter(description="-p: primary, -s: secondary (default)", default="")):
         """Register user for a specific day and time slot."""
         battle_class = find_class(battle_class)
 
@@ -68,7 +69,8 @@ class DawnBattle(RegisteredBattle):
             return
 
         await self.register(ctx, day, time, **{
-            "role" : battle_class
+            "role" : battle_class,
+            "primary" : 'p' in options or '-p' in options
         })
 
     @commands.command(name="dawn.remove", aliases=['d.remove', 'd.rm', 'dawn.rm'])
@@ -99,7 +101,9 @@ class DawnBattle(RegisteredBattle):
     def _format_member(prefs: dict, entry: dict, user_datetime: datetime):
         context = entry.get('context', {})
         role = context.get('role', 'Unknown')
-        return f'[**{role}**] {prefs.get("alias", "Unknown")} ({user_datetime.strftime(DATE_DISPLAY_FORMAT)})'
+        is_primary = entry.get('context', {}).get('primary', False)
+        icon = PRIMARY_ICON["primary"] if is_primary else PRIMARY_ICON["secondary"]
+        return f'{icon} [**{role}**] {prefs.get("alias", "Unknown")} ({user_datetime.strftime(DATE_DISPLAY_FORMAT)})'
 
 
 # Add the cog to the bot

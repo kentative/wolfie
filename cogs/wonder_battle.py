@@ -2,15 +2,13 @@ from datetime import datetime
 
 from discord.ext import commands
 
-from cogs.battle.registered_battle import RegisteredBattle, DATE_DISPLAY_FORMAT
+from cogs.battle.registered_battle import RegisteredBattle, DATE_DISPLAY_FORMAT, PRIMARY_ICON
 from core.ganglia import Memory
 from utils.logger import init_logger
 
 BATTLE_NAME = "Wonder Contest"
 
 logger = init_logger('WonderContest')
-
-EMOJIS = {"primary": "⚔️️", "secondary": ""}
 
 class WonderBattle(RegisteredBattle):
     def __init__(self, bot):
@@ -30,7 +28,7 @@ class WonderBattle(RegisteredBattle):
             await ctx.send("Invalid options. Use -p for primary.")
 
 
-    @commands.command(name="wonder.remove", aliases=['wonder.rm'])
+    @commands.command(name="wonder.remove", aliases=['wonder.rm', 'w.remove', 'w.rm'])
     async def remove(self, ctx,
                      day: str=commands.parameter(description="use d1 or d2"),
                      time: str=commands.parameter(description="use t1, t2 or t3")):
@@ -39,7 +37,10 @@ class WonderBattle(RegisteredBattle):
 
 
     @commands.command(name="wonder.list", aliases=['wonder.ls', 'w.ls', 'w.list'])
-    async def wonder_list(self, ctx, options:str = commands.parameter(description="supported options: 'all'", default="")):
+    async def wonder_list(self, ctx,
+                          options: str = commands.parameter(
+                              description="a 'all slots', d#t# 'specific slot'",
+                              default="non-empty")):
 
         """List current registration information in UTC."""
         await self.list_registration(
@@ -50,7 +51,7 @@ class WonderBattle(RegisteredBattle):
     @staticmethod
     def _format_member(prefs: dict, entry: dict, user_datetime: datetime):
         is_primary = entry.get('context', {}).get('primary', False)
-        icon = EMOJIS["primary"] if is_primary else EMOJIS["secondary"]
+        icon = PRIMARY_ICON["primary"] if is_primary else PRIMARY_ICON["secondary"]
         return f'{icon} {prefs.get("alias", "Unknown")} ({user_datetime.strftime(DATE_DISPLAY_FORMAT)})'
 
 
