@@ -68,6 +68,10 @@ class DawnBattle(RegisteredBattle):
             await ctx.send(f"Unknown class, please specify one of these `{', '.join(CLASS_NAMES.keys())}`")
             return
 
+        # ensure option is a string
+        if not isinstance(options, str):
+            options = ""
+
         await self.register(ctx, day, time, **{
             "role" : battle_class,
             "primary" : 'p' in options or '-p' in options

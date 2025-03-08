@@ -261,10 +261,11 @@ class TitleQueue(commands.Cog):
             await ctx.send(f"Invalid queue.")
             return
 
-        queue = self.queues[queue_name]
+        queues = await self.cortex.get_memory(Memory.TITLE_QUEUES)
+        queue = queues[queue_name]
         if queue["cursor"] > 0:
             queue["cursor"] -= 1
-            self.save_queues()
+            await self.cortex.remember(self.memory).save
             await ctx.send(f"Reverted {queue_name} queue.")
         else:
             await ctx.send("No previous entries to revert.")
@@ -278,11 +279,12 @@ class TitleQueue(commands.Cog):
         embed.add_field(name="", value="", inline=False)
 
         all_prefs = await self.cortex.get_all_preferences()
+        queues = await self.cortex.get_memory(Memory.TITLE_QUEUES)
         for queue_name in queue_names:
             if queue_name.lower() not in QUEUES:
                 continue
 
-            queue = self.queues[queue_name]
+            queue = queues[queue_name]
             if len(queue['entries']) == 0:
                 continue # skip empty queue
 
@@ -300,11 +302,11 @@ class TitleQueue(commands.Cog):
                 emoji = EMOJIS["past"] if i < queue["cursor"] \
                     else (EMOJIS["current"] if i == queue["cursor"] else EMOJIS["waiting"])
 
-                entry_tz =  get_timezone_by_id(entry_id, all_prefs)
+                entry_tz =  pytz.timezone(get_timezone_by_id(entry_id, all_prefs))
                 dt = datetime.fromisoformat(entry["time"])
 
                 description = f"{dt.astimezone(entry_tz).strftime('%m-%d %H:%M')} {entry_tz}" \
-                    if entry_tz.zone != "UTC" else ""
+                    if entry_tz != "UTC" else ""
 
                 embed.add_field(name=f'{emoji}  {i+1}. {entry_alias} ({dt.astimezone(pytz.UTC).strftime("%m-%d %H:%M")})',
                                 value=description,

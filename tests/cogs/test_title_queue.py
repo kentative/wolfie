@@ -50,6 +50,24 @@ class TestTitleQueue:
         validate_entries(queues, "per_hour")
 
     @pytest.mark.asyncio
+    async def test_list_queue(self, title_queue, ctx_user1, ctx_user2, ctx_user3):
+        """Test joining a queue"""
+
+        users = [ctx_user1, ctx_user2, ctx_user3]
+
+        # clear the queues
+        await title_queue.cortex.forget(Memory.TITLE_QUEUES)
+
+        for ctx in users:
+            await title_queue.queue_add.__call__(title_queue, ctx, "sage", None, None)
+
+        await title_queue.queue_list(title_queue, ctx_user1, "sage")
+
+        ctx_user1.send.assert_called()
+        embed = ctx_user1.send.call_args.kwargs.get('embed')
+        assert len(embed.fields) == 6
+
+    @pytest.mark.asyncio
     async def test_queue_join(self, title_queue, ctx_user1, ctx_user2, ctx_user3):
         """Test joining a queue"""
 

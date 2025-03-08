@@ -18,7 +18,8 @@ def init_logger(logger_name:str):
     file_handler = RotatingFileHandler(
         'logs/wolfie.log',
         maxBytes=1024 * 1024,  # 1MB
-        backupCount=5
+        backupCount=5,
+        delay=True
     )
 
     # Create formatters
