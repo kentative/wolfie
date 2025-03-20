@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import discord
 import pytz
@@ -66,7 +66,7 @@ class Preferences(commands.Cog):
         await ctx.send(embed=embed)
 
 
-    @commands.command(name="wolfie.set.time",  aliases=['wolfie.time'])
+    @commands.command(name="wolfie.set.timezone",  aliases=['wolfie.set.tz', 'wolfie.tz'])
     async def set_timezone(self, ctx, timezone_name: str=commands.parameter(description="- your local timezone")):
             """
             Tell Wolfie your local timezone. Wolfie use your local timezone when display info requested by you.

@@ -305,8 +305,9 @@ class TitleQueue(commands.Cog):
                 entry_tz =  pytz.timezone(get_timezone_by_id(entry_id, all_prefs))
                 dt = datetime.fromisoformat(entry["time"])
 
+                # display timezone if not UTC
                 description = f"{dt.astimezone(entry_tz).strftime('%m-%d %H:%M')} {entry_tz}" \
-                    if entry_tz != "UTC" else ""
+                    if entry_tz.zone != "UTC" else ""
 
                 embed.add_field(name=f'{emoji}  {i+1}. {entry_alias} ({dt.astimezone(pytz.UTC).strftime("%m-%d %H:%M")})',
                                 value=description,
