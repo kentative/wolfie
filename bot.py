@@ -6,6 +6,7 @@ from discord.ext import commands
 from discord.ext.commands import Bot
 from dotenv import load_dotenv
 
+from core.brain import Brain
 from core.cortex import Cortex
 from utils.logger import init_logger
 
@@ -25,6 +26,7 @@ intents.members = True
 
 bot = Bot(command_prefix=PREFIX, intents=intents)
 bot.cortex = Cortex()
+bot.brain = Brain()
 
 @bot.event
 async def on_ready():

@@ -27,7 +27,24 @@ class Brain:
             "parameters": parameters
         }
 
-    def ask(self, user_input):
+    def ask(self, user_input: str):
+        """
+        Ask the Gemini API to handle the request and determine if a registered function should be called.
+        """
+        prompt = f"""
+        You are an AI assistant. The user has provided the following input:
+        {user_input}
+        
+        provide a concise and accurate response to the user's input. Do not include any additional information or 
+        explanations beyond the response itself. If the user's input is not related to the registered functions, 
+        respond with a helpful message based on the input.        
+        """
+
+        response = self.model.generate_content(prompt)
+        return response.text.strip()
+
+
+    def ask_with_function(self, user_input: str):
         """
         Ask the Gemini API to handle the request and determine if a registered function should be called.
         """
