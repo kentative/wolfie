@@ -14,7 +14,7 @@ class WonderBattle(RegisteredBattle):
     def __init__(self, bot):
         super().__init__(BATTLE_NAME, Memory.WONDER_BATTLE, bot)
 
-    @commands.command(name="wonder.add", aliases=['w.add', 'wonder'])
+    @commands.command(name="wonder.add", aliases=['wonder'])
     async def add(self, ctx,
                      day: str=commands.parameter(description="use d1 or d2"),
                      time: str=commands.parameter(description="use t1, t2 or t3"),
@@ -28,7 +28,7 @@ class WonderBattle(RegisteredBattle):
             await ctx.send("Invalid options. Use -p for primary.")
 
 
-    @commands.command(name="wonder.remove", aliases=['wonder.rm', 'w.remove', 'w.rm'])
+    @commands.command(name="wonder.remove", aliases=['wonder.rm'])
     async def remove(self, ctx,
                      day: str=commands.parameter(description="use d1 or d2"),
                      time: str=commands.parameter(description="use t1, t2 or t3")):
@@ -36,7 +36,7 @@ class WonderBattle(RegisteredBattle):
         await self.unregister(ctx, day, time)
 
 
-    @commands.command(name="wonder.list", aliases=['wonder.ls', 'w.ls', 'w.list'])
+    @commands.command(name="wonder.list", aliases=['wonder.ls'])
     async def wonder_list(self, ctx,
                           options: str = commands.parameter(
                               description="a 'all slots', d#t# 'specific slot'",

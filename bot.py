@@ -41,6 +41,10 @@ async def on_ready():
             except Exception as e:
                 logger.error(f'Failed to load cog {filename}: {str(e)}')
 
+    for command in bot.commands:
+        bot.brain.register_function(command, command.name, command.help, command.params)
+
+
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):

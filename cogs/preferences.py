@@ -23,7 +23,7 @@ class Preferences(commands.Cog):
     @commands.command(name='wolfie.set', aliases=['wolfie.set.prefs', 'wolfie.prefs', 'wolfie.me'])
     async def set_name(self, ctx,
                        alias: str = commands.parameter(description="- your in-game name"),
-                       timezone: str = commands.parameter(description="- your local timezone", default='UTC')):
+                       tz: str = commands.parameter(description="- your local timezone", default='UTC')):
         """
         Tell Wolfie your name and timezone.
         Find timezone here: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
@@ -34,9 +34,9 @@ class Preferences(commands.Cog):
             await ctx.send("Please provide an alias.")
             return
         try:
-            timezone = pytz.timezone(timezone).zone
+            tz = pytz.timezone(tz).zone
         except pytz.UnknownTimeZoneError:
-            logger.error(f"Invalid timezone: {timezone}")
+            logger.error(f"Invalid timezone: {tz}")
             ctx.send("Invalid timezone. Please provide a valid timezone id.")
             return
 
@@ -46,7 +46,7 @@ class Preferences(commands.Cog):
         new_pref = {
             'name': ctx.author.display_name,
             'alias': alias,
-            'timezone': timezone
+            'timezone': tz
         }
 
         # Perform the update

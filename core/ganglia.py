@@ -42,6 +42,7 @@ from utils.logger import init_logger
 
 # Memory configurations
 class Memory(Enum):
+    INTERACTIONS = ("interactions", "data/interactions.json")
     PREFERENCES = ("preferences", "data/user_preferences.json")
     TITLE_QUEUES = ("title_queues", "data/title_queue.json")
     DAWN_BATTLE = ("dawn_battle", "data/dawn_battle.json")
@@ -91,7 +92,7 @@ class BasalGanglia(ABC):
         self.is_modified: bool = False
 
     def initialize(self, init_data: dict):
-        """Initialize the Ganglia instance"""
+        """Initialize the Ganglia instance only if data is empty"""
 
         self.init_data = init_data
         if not self._data:
@@ -163,6 +164,10 @@ class DawnBattleGanglia(BasalGanglia):
     def __init__(self):
         super().__init__(Memory.DAWN_BATTLE.path)
 
+class InteractionsGanglia(BasalGanglia):
+    def __init__(self):
+        super().__init__(Memory.INTERACTIONS.path)
+
 class GangliaInterface:
     def __init__(self):
         self._lock = asyncio.Lock()
@@ -171,7 +176,8 @@ class GangliaInterface:
             Memory.PREFERENCES.type: PreferencesGanglia(),
             Memory.TITLE_QUEUES.type: QueueGanglia(),
             Memory.WONDER_BATTLE.type: WonderBattleGanglia(),
-            Memory.DAWN_BATTLE.type: DawnBattleGanglia()
+            Memory.DAWN_BATTLE.type: DawnBattleGanglia(),
+            Memory.INTERACTIONS.type: InteractionsGanglia()
         }
 
     async def get_preferences(self, ctx: Context):

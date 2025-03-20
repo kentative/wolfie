@@ -27,17 +27,35 @@ class Brain:
             "parameters": parameters
         }
 
-    def ask(self, user_input: str):
+
+    def ask(self, user_details: str, interactions: str, user_input: str):
         """
         Ask the Gemini API to handle the request and determine if a registered function should be called.
         """
+
+        function_description = {}
+        for name, function_info in self.registered_functions.items():
+            function_description[name] = {
+                "description": function_info["description"],
+                "parameters": str(function_info["parameters"])
+            }
+
         prompt = f"""
-        You are an AI assistant. The user has provided the following input:
-        {user_input}
+        Your name is Wolfie, an AI assistant for one of the strongest alliance in the game Age of Empires Mobile. 
+        You are part of the alliance known as TheLastWolf (TLW). Your goal is to provide helpful, concise
+        and accurate answer when asked. When you give command example, don't include the parameter names. 
         
-        provide a concise and accurate response to the user's input. Do not include any additional information or 
-        explanations beyond the response itself. If the user's input is not related to the registered functions, 
-        respond with a helpful message based on the input.        
+        You have access to the following capability as an alliance AI assistance:
+        {json.dumps(function_description, indent=2)}
+        
+        This is what you know about the member:
+        {user_details}
+        
+        You are provided with the following interactions history:
+        {interactions}      
+                
+        Question:
+        {user_input}       
         """
 
         response = self.model.generate_content(prompt)
