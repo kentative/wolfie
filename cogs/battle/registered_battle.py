@@ -5,6 +5,7 @@ import pytz
 from discord.ext import commands
 
 from core.ganglia import Memory
+from utils.discord_utils import format_embed_fields
 from utils.logger import init_logger
 from utils.prefs_utils import get_timezone, get_alias
 
@@ -248,3 +249,4 @@ class RegisteredBattle(commands.Cog):
                                     inline=False)
 
         await ctx.send(embed=embed)
+        await self.cortex.record_event(self.memory.type, format_embed_fields(embed))

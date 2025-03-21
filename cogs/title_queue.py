@@ -10,6 +10,7 @@ from core.ganglia import Memory
 from tests.conftest import MockContext
 from utils.datetime_utils import has_required_permissions, parse_datetime, parse_date_input, parse_time_input, \
     read_iso_datetime
+from utils.discord_utils import format_embed_fields
 from utils.logger import init_logger
 from utils.prefs_utils import get_timezone, get_alias, get_alias_by_id, get_timezone_by_id
 
@@ -320,6 +321,7 @@ class TitleQueue(commands.Cog):
             embed.description = "No entries in the queues."
 
         await ctx.send(embed=embed)
+        await self.cortex.record_event(self.memory.type, format_embed_fields(embed))
 
 
 async def setup(bot):

@@ -18,6 +18,10 @@ class Cortex(GangliaInterface):
             user_details[memory_name] = await memory_class.get(user_id)
         return user_details
 
+    async def record_event(self, key, event_details: dict):
+        await self.update_memory(Memory.SHARED_EVENTS, key, event_details)
+        await self.remember(Memory.SHARED_EVENTS)
+
     async def remember(self, memory: Memory = None):
         for memory_name, memory_class in self._memory.items():
             if memory_class.is_modified or memory_name == memory.type:

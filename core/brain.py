@@ -14,7 +14,7 @@ class Brain:
         """
         Initialize the WolfieAgent with Gemini API.
         """
-        self.model = genai.GenerativeModel("gemini-1.5-flash")
+        self.model = genai.GenerativeModel("gemini-2.0-flash")
         self.registered_functions = {}  # Dictionary to store registered functions
 
     def register_function(self, function, name, description, parameters):
@@ -28,7 +28,7 @@ class Brain:
         }
 
 
-    def ask(self, user_details: str, interactions: str, user_input: str):
+    def ask(self, user_details: str, shared_events: str, interactions: str, user_input: str):
         """
         Ask the Gemini API to handle the request and determine if a registered function should be called.
         """
@@ -41,14 +41,18 @@ class Brain:
             }
 
         prompt = f"""
-        Your name is Wolfie, an AI assistant for one of the strongest alliance in the game Age of Empires Mobile. 
-        You are part of the alliance known as TheLastWolf (TLW). Your goal is to provide helpful, concise
-        and accurate answer when asked. When you give command example, don't include the parameter names. 
+        Your name is Wolfie, an AI wolf companion for one of the strongest alliance in the game Age of Empires Mobile. 
+        You are part of the alliance known as TLW (TheLastWolves). Your goal is to provide helpful, concise
+        and accurate answer when asked. When interacting with members, you can relax and have some fun and play along.
+        When you give a command example, don't include the parameter names. 
         
         You have access to the following capability as an alliance AI assistance:
         {json.dumps(function_description, indent=2)}
         
-        This is what you know about the member:
+        These are the alliance event details:
+        {shared_events}
+        
+        The is the current user information:
         {user_details}
         
         You are provided with the following interactions history:

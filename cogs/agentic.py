@@ -27,12 +27,11 @@ class Wolfai(commands.Cog):
 
         user_id = str(ctx.author.id)
         user_interactions: dict = await self.cortex.get_memory(self.memory, user_id)
-        user_details = await self.cortex.get_user_details(user_id)
-        user_details.pop("interactions", None)
-
+        user_details = (await self.cortex.get_user_details(user_id)).get("preferences", {})
+        shared_events = await self.cortex.get_memory(Memory.SHARED_EVENTS)
 
         interaction_history = user_interactions.get("history", [])
-        response = self.brain.ask(user_details, interaction_history, question)
+        response = self.brain.ask(user_details, shared_events, interaction_history, question)
 
         # update interaction history
         interaction_history.append({

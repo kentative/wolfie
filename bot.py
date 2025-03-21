@@ -10,7 +10,7 @@ from core.brain import Brain
 from core.cortex import Cortex
 from utils.logger import init_logger
 
-VERSION = "1.2025.03.01-cortex"
+VERSION = "1.2025.03.20-flash"
 
 # Load environment variables
 load_dotenv()

@@ -42,6 +42,7 @@ from utils.logger import init_logger
 
 # Memory configurations
 class Memory(Enum):
+    SHARED_EVENTS = ("shared_events", "data/shared_events.json")
     INTERACTIONS = ("interactions", "data/interactions.json")
     PREFERENCES = ("preferences", "data/user_preferences.json")
     TITLE_QUEUES = ("title_queues", "data/title_queue.json")
@@ -168,6 +169,10 @@ class InteractionsGanglia(BasalGanglia):
     def __init__(self):
         super().__init__(Memory.INTERACTIONS.path)
 
+class SharedEventsGanglia(BasalGanglia):
+    def __init__(self):
+        super().__init__(Memory.SHARED_EVENTS.path)
+
 class GangliaInterface:
     def __init__(self):
         self._lock = asyncio.Lock()
@@ -177,7 +182,8 @@ class GangliaInterface:
             Memory.TITLE_QUEUES.type: QueueGanglia(),
             Memory.WONDER_BATTLE.type: WonderBattleGanglia(),
             Memory.DAWN_BATTLE.type: DawnBattleGanglia(),
-            Memory.INTERACTIONS.type: InteractionsGanglia()
+            Memory.INTERACTIONS.type: InteractionsGanglia(),
+            Memory.SHARED_EVENTS.type: SharedEventsGanglia()
         }
 
     async def get_preferences(self, ctx: Context):
