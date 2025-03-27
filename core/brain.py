@@ -1,13 +1,19 @@
 import json
+import logging.config
 import os
 
-from dotenv import load_dotenv
 import google.generativeai as genai
+from dotenv import load_dotenv
+from google.ai.generativelanguage_v1beta import ToolConfig
+from google.generativeai import GenerationConfig
+
+from utils.logger import init_logger
 
 load_dotenv()
 
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
+logger = init_logger('Brain')
 
 class Brain:
     def __init__(self):
@@ -27,44 +33,92 @@ class Brain:
             "parameters": parameters
         }
 
+    def get_tool_declarations(self):
+        """
+        Get the tool declarations for the registered functions in the required format.
+        Returns a list containing a single dictionary with function_declarations.
+        """
+        function_declarations = []
+        for name, function_info in self.registered_functions.items():
+            required = []
+            properties = {}
+            for param_name, param_obj in function_info["parameters"].items():
 
-    def ask(self, user_details: str, shared_events: str, interactions: str, user_input: str):
+                properties[param_name] = {
+                    "type": "string",
+                    "description": param_obj.description
+                }
+                if param_obj.required:
+                    required.append(param_name)
+
+
+            parameters = {
+                    "type": "object",
+                    "properties": properties,
+                    "required": required
+                } if properties else None
+
+            function_declarations.append({
+                "name": name,
+                "description": function_info["description"],
+                "parameters": parameters
+            })
+        logger.info(json.dumps(function_declarations))
+
+        return {
+            "function_declarations" : function_declarations
+        }
+
+    async def ask(self, ctx, user_details: str, shared_events: str, interactions: str, user_input: str):
         """
         Ask the Gemini API to handle the request and determine if a registered function should be called.
         """
 
-        function_description = {}
-        for name, function_info in self.registered_functions.items():
-            function_description[name] = {
-                "description": function_info["description"],
-                "parameters": str(function_info["parameters"])
-            }
-
+        # Construct the system prompt
         prompt = f"""
-        Your name is Wolfie, an AI wolf companion for one of the strongest alliance in the game Age of Empires Mobile. 
-        You are part of the alliance known as TLW (TheLastWolves). Your goal is to provide helpful, concise
-        and accurate answer when asked. When interacting with members, you can relax and have some fun and play along.
-        When you give a command example, don't include the parameter names. 
-        
-        You have access to the following capability as an alliance AI assistance:
-        {json.dumps(function_description, indent=2)}
-        
+        Your name is Wolfie, an AI wolf companion for one of the strongest alliances in the game Age of Empires Mobile.
+        You are part of the alliance known as TLW (TheLastWolves). Your goal is to provide helpful, concise,
+        and accurate answers when asked. When interacting with members, you can relax, have fun, and play along.
+        When you give a command example, don't include the parameter names.
+
         These are the alliance event details:
         {shared_events}
-        
-        The is the current user information:
+
+        This is the current user information:
         {user_details}
-        
-        You are provided with the following interactions history:
+
+        You are provided with the following interaction history:
         {interactions}      
-                
+
         Question:
         {user_input}       
         """
 
-        response = self.model.generate_content(prompt)
-        return response.text.strip()
+        response = self.model.generate_content(
+            prompt,
+            generation_config=GenerationConfig(temperature=0),
+            tools=[self.get_tool_declarations()],
+            tool_config=ToolConfig(
+                function_calling_config= {
+                    "mode" : "ANY"
+                }
+            )
+        )
 
+        # Check if a function call is suggested
+        if response.parts and response.parts[0].function_call:
+            function_call = response.parts[0].function_call
+            function_name = function_call.name
+            arguments = function_call.args
+            logger.info(f"{function_name} called with arguments: {arguments}")
+
+            # Execute the corresponding function if registered
+            if function_name in self.registered_functions:
+                function_output = await self.registered_functions[function_name]["function"](ctx, **arguments)
+                return function_output
+
+        # Return text response if no function call was made
+        return response.text.strip()
 
     def ask_with_function(self, user_input: str):
         """
