@@ -8,6 +8,8 @@ NAME_LIST_TITLE = 'Wolfie Name List'
 
 logger = init_logger('Wolfai')
 
+EMOJIS = {"day": "☀️", "night": "💤"}
+
 class Wolfai(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -29,15 +31,13 @@ class Wolfai(commands.Cog):
         shared_events = await self.cortex.get_memory(Memory.SHARED_EVENTS)
 
         interaction_history = user_interactions.get("history", [])
-        response = await self.brain.ask(ctx, user_details, shared_events, interaction_history, question)
+        response = self.brain.ask(user_details, shared_events, interaction_history, question)
 
         # update interaction history
         interaction_history.append({
             'question': question,
             'response': response,
         })
-
-        # TODO summarize older interactions
 
         user_interactions.update({
             # retain the last 10 interactions
