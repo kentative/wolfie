@@ -238,8 +238,6 @@ class TitleQueue(commands.Cog):
         cursor = queue["cursor"]
         if count + cursor > len(queue):
             count = queue_size - cursor
-            if count != 1:
-                await ctx.send(f"Count value exceeds queue size. Changing to {count}")
 
         logger.info(f"Advancing queue. cursor: {cursor} count: {count} size: {queue_size}")
         if queue["cursor"] < queue_size:
@@ -266,7 +264,7 @@ class TitleQueue(commands.Cog):
         queue = queues[queue_name]
         if queue["cursor"] > 0:
             queue["cursor"] -= 1
-            await self.cortex.remember(self.memory).save
+            await self.cortex.remember(self.memory)
             await ctx.send(f"Reverted {queue_name} queue.")
         else:
             await ctx.send("No previous entries to revert.")

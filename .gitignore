@@ -157,3 +157,4 @@ cython_debug/
 /tests/data/
 /tests/logs/
 /tests/cogs/data/
+/tests/cogs/logs/
