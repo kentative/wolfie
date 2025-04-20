@@ -8,7 +8,7 @@ from discord.ext import commands
 
 from core.ganglia import Memory
 from tests.conftest import MockContext
-from utils.datetime_utils import has_required_permissions, parse_datetime, parse_date_input, parse_time_input, \
+from utils.datetime_utils import parse_datetime, parse_date_input, parse_time_input, \
     read_iso_datetime
 from utils.discord_utils import format_embed_fields
 from utils.logger import init_logger
@@ -217,58 +217,6 @@ class TitleQueue(commands.Cog):
         else:
             await ctx.send("No matching entry found to remove.")
 
-    @has_required_permissions()
-    @commands.command(name="queue.next", aliases=['q.next', 'q.n'])
-    async def queue_next(self, ctx,
-                         queue_name: str=commands.parameter(description="- the queue name"),
-                         count: int=commands.parameter(description="number of entries to advance. default 1", default=1)):
-        """
-        To be used by title provider. Advance the queue to the next user.
-        - Example: !queue.next master
-        """
-        if queue_name not in QUEUES:
-            await ctx.send(f"Invalid queue.")
-            return
-
-        if count < 1:
-            await ctx.send(f"Count must be at least 1.")
-
-        queue = await self.cortex.get_memory(Memory.TITLE_QUEUES, queue_name)
-        queue_size = len(queue["entries"])
-        cursor = queue["cursor"]
-        if count + cursor > len(queue):
-            count = queue_size - cursor
-
-        logger.info(f"Advancing queue. cursor: {cursor} count: {count} size: {queue_size}")
-        if queue["cursor"] < queue_size:
-            queue["cursor"] += count
-            await self.cortex.remember(self.memory)
-            entry = queue["entries"][queue["cursor"] -1]
-            await ctx.send(f"<@{entry.get('user_id')}>, your title is available!")
-
-        else:
-            await ctx.send("No more entries to advance.")
-
-    @has_required_permissions()
-    @commands.command(name="queue.back", aliases=['q.back', 'q.b'])
-    async def queue_back(self, ctx, queue_name: str=commands.parameter(description="- the queue name")):
-        """
-        To be used by title provider. Rollback the queue to the previous user.
-        - Example: !queue.back master
-        """
-        if queue_name not in QUEUES:
-            await ctx.send(f"Invalid queue.")
-            return
-
-        queues = await self.cortex.get_memory(Memory.TITLE_QUEUES)
-        queue = queues[queue_name]
-        if queue["cursor"] > 0:
-            queue["cursor"] -= 1
-            await self.cortex.remember(self.memory)
-            await ctx.send(f"Reverted {queue_name} queue.")
-        else:
-            await ctx.send("No previous entries to revert.")
-
     @commands.command(name="queue.list", aliases=['q.list', 'q.ls'])
     async def queue_list(self, ctx, *queue_names: str):
         """Display the queue entries. Example: !queue.list sage master ..."""
@@ -279,19 +227,28 @@ class TitleQueue(commands.Cog):
 
         all_prefs = await self.cortex.get_all_preferences()
         queues = await self.cortex.get_memory(Memory.TITLE_QUEUES)
+        current_time = datetime.now(pytz.UTC)
+        two_hours_ago = current_time - timedelta(hours=2)
+
         for queue_name in queue_names:
             if queue_name.lower() not in QUEUES:
                 continue
 
             queue = queues[queue_name]
-            if len(queue['entries']) == 0:
+            # Filter entries that are older than 2 hours
+            current_entries = [
+                entry for entry in queue['entries']
+                if datetime.fromisoformat(entry["time"]).replace(tzinfo=pytz.UTC) <= two_hours_ago
+            ]
+
+            if len(current_entries) == 0:
                 continue # skip empty queue
 
             # Display Queue name
             embed.add_field(name=QUEUES[queue_name], value="", inline=False)
 
             # Display queue entries with UTC and Local time
-            for i, entry in enumerate(queue["entries"]):
+            for i, entry in enumerate(current_entries):
 
                 logger.info(f"{queue_name} entry: {entry}")
                 entry_id = entry['user_id']
